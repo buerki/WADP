@@ -8,7 +8,7 @@ The Word Association Data Processor (WADP)
 *******
 DESCRIPTION
 
-The Word Association Data Processor (WADP) is an open-source, free software package which automates key aspects of the processing of word association data gathered from respondents in word association tests. Its user base is expected to be linguists and others working with word association data and employing a methodology similar to that presented in [Fitzpatrick et. al. (2013)](http://applij.oxfordjournals.org/content/36/1/23.full.pdf+html).
+The Word Association Data Processor (WADP) is an open-source, free software package which automates key aspects of the processing of word association data gathered from respondents in word association tests. Its user base is expected to be linguists and others working with word association data and employing a methodology similar to that presented in [Fitzpatrick et. al. (2015)](http://applij.oxfordjournals.org/content/36/1/23.full.pdf+html).
 
 
 
@@ -78,6 +78,11 @@ A manual detailing the operation of the WADP and a tutorial is supplied as a PDF
 AUTHOR
 
 Andreas Buerki, <buerkiA@cardiff.ac.uk>  
+
+******
+SPECIAL THANKS TO
+
+Prof. Tess Fitzpatrick and Prof. Alison Wray
 
 ******
 SEE ALSO
