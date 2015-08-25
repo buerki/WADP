@@ -1,13 +1,11 @@
 #!/bin/bash -
-
 ##############################################################################
-# categoriser.sh (c) ABuerki 2014
+# categoriser.sh (c) 2015 Cardiff University
+# written by Andreas Buerki
 ####
-version="0.3.1"
+version="0.5"
 # DESCRRIPTION: assigns categories to word-association data
-
 ################ the following section can be adjusted
-
 # the key used for category assignments
 key='
   (A)     Affix manipulation                      (e.g. irony -> ironic)
@@ -16,7 +14,7 @@ key='
   (E)     Erratic                                 (e.g. wolf -> and)
   (F)     similar in Form only                    (e.g. fence -> hence)
   (I)     two-step association                    (e.g. weak -> Monday, via 'week')
-  (L)     Lexical set                             (e.g. bean -> vegetable, bean -> pea)
+  (L)     Lexical set                             (e.g. bean -> vegetable / pea)
   (LCR)   Lexical set & Cue-Response collocation  (e.g. gold -> silver)
   (LRC)   Lexical set & Response-Cue collocation  (e.g. cheese -> bread)
   (OC)    Other Conceptual                        (e.g. fence -> field)
@@ -26,12 +24,11 @@ key='
   (S)     Synonym                                 (e.g. delay -> impede)
   (SCR)   Synonym & Cue-Response collocation      (e.g. torch -> light)
   (SRC)   Synonym & Response-Cue collocation      (e.g. shove -> push)
-  (SS)    Synonym plural                          (e.g. variety -> choices)
+  (SS)    Synonym in wider sense (not necessarily (e.g. joint -> unification)
+          same part of speech or number)
 '
-
 # list of allowed categories
 allowed_categories='A,CR,CRRC,E,F,I,L,LCR,LRC,OC,OCCR,OCRC,RC,S,SCR,SRC,SS'
-
 ################# end of user-adjustable section
 ################# defining functions ###############################
 
@@ -43,11 +40,11 @@ help ( ) {
 DESCRRIPTION: $(basename $0) assigns categories to word-association data
 SYNOPSIS:     $(basename $0) [-r] [(DATABASE.dat|DATABASE.csv)] WA-FILE.csv
               Items in square brackets are optional. Order is significant.
-OPTIONS:      -r   if used, this will result in rater IDs listed in output file
+OPTIONS:      -a   run as auxiliary script to WADP
+              -r   if used, this will result in rater IDs listed in output file
               -V   to display version, copyright and licensing information
 "
 }
-
 #######################
 # define add_to_name function
 #######################
@@ -57,13 +54,12 @@ OPTIONS:      -r   if used, this will result in rater IDs listed in output file
 # plus an incremented count appended.
 ####
 add_to_name ( ) {
-
 count=
-if [ "$(grep '.csv' <<< $1)" ]; then
-	if [ -e $1 ]; then
+if [ "$(egrep '.csv$' <<<"$1")" ]; then
+	if [ -e "$1" ]; then
 		add=-
 		count=1
-		new="$(sed 's/\.csv//' <<< $1)"
+		new="$(sed 's/\.csv//' <<< "$1")"
 		while [ -e "$new$add$count.csv" ];do
 			(( count += 1 ))
 		done
@@ -71,12 +67,12 @@ if [ "$(grep '.csv' <<< $1)" ]; then
 		count=
 		add=
 	fi
-	output_filename="$(sed 's/\.csv//' <<< $1)$add$count.csv"
-elif [ "$(grep '.dat' <<< $1)" ]; then
-	if [ -e $1 ]; then
+	output_filename="$(sed 's/\.csv//' <<< "$1")$add$count.csv"
+elif [ "$(egrep '.dat$' <<< "$1")" ]; then
+	if [ -e "$1" ]; then
 		add=-
 		count=1
-		new="$(sed 's/\.dat//' <<< $1)"
+		new="$(sed 's/\.dat//' <<< "$1")"
 		while [ -e "$new$add$count.dat" ];do
 			(( count += 1 ))
 		done
@@ -84,12 +80,12 @@ elif [ "$(grep '.dat' <<< $1)" ]; then
 		count=
 		add=
 	fi
-	output_filename="$(sed 's/\.dat//' <<< $1)$add$count.dat"
-elif [ "$(grep '.txt' <<< $1)" ]; then
-	if [ -e $1 ]; then
+	output_filename="$(sed 's/\.dat//' <<< "$1")$add$count.dat"
+elif [ "$(grep '.txt' <<< "$1")" ]; then
+	if [ -e "$1" ]; then
 		add=-
 		count=1
-		new="$(sed 's/\.txt//' <<< $1)"
+		new="$(sed 's/\.txt//' <<< "$1")"
 		while [ -e "$new$add$count.txt" ];do
 			(( count += 1 ))
 		done
@@ -97,12 +93,12 @@ elif [ "$(grep '.txt' <<< $1)" ]; then
 		count=
 		add=
 	fi
-	output_filename="$(sed 's/\.txt//' <<< $1)$add$count.txt"
+	output_filename="$(sed 's/\.txt//' <<< "$1")$add$count.txt"
 else
-	if [ -e $1 ]; then
+	if [ -e "$1" ]; then
 		add=-
 		count=1
-		while [ -e $1-$count ]
+		while [ -e "$1"-$count ]
 			do
 			(( count += 1 ))
 			done
@@ -110,22 +106,21 @@ else
 		count=
 		add=
 	fi
-	output_filename=$(echo "$1$add$count")
+	output_filename=$(echo ""$1"$add$count")
 fi
 }
-
 ###################
 # standard menu function (displays standard menu)
 ###################
 standard_menu ( ) {
-		clear
+		printf "\033c"
 		echo "Please rate the following pair:"
 		echo " "
 		echo " "
-		echo "		$cue   ->   $(sed 's/_/ /g' <<< $response)"
+		echo "		$cue   ->   $(sed -e 's/_DOT_/\./g' -e 's=_SLASH_=/=g' -e "s/_APOSTROPHE_/\'/g" -e 's/_LBRACKET_/(/g' -e 's/_RBRACKET_/)/g' -e 's/_ASTERISK_/\*/g' -e 's/_PLUS_/\+/g' -e 's/_/ /g'<<< $response)"
 		echo " "
 		echo " "
-		echo "enter a choice and press ENTER:"
+		echo "type a choice and press ENTER:"
 		echo "$key"
 		echo "  (X)     exit (work will be saved)"
 		if [ -n "$previous_pair" ]; then
@@ -137,26 +132,24 @@ standard_menu ( ) {
 		echo "You entered: $category"
 		sleep 0.4
 }
-
 ###################
 # back menu function (displays standard menu)
 ###################
 back_menu ( ) {
-		clear
+		printf "\033c"
 		echo "Previously you rated this pair as follows:"
 		echo " "
 		echo " "
 		echo "	$(echo "$previous_pair" | cut -d ':' -f 2 | sed $extended -e 's/\|/   ->   /' -e 's/\|/   /' -e 's/_/ /g')"
 		echo " "
 		echo " "
-		echo "enter a fresh choice and press ENTER:"
+		echo "type a fresh choice and press ENTER:"
 		echo "$key"
 		read -p '>>> ' old_category  < /dev/tty
 		old_category=$(tr '[[:lower:]]' '[[:upper:]]' <<< $old_category)
 		echo "You entered: $old_category"
 		sleep 0.4
 }
-
 ###################
 # exit_routine function (saves output files)
 ###################
@@ -173,20 +166,64 @@ if [ "$previous_pair" ]; then
 	fi
 fi
 ### write db file (this is tab delimited with one cue per line)
-add_to_name db-$(date "+%d-%m-%Y%n").dat
 for part in $(ls $DBSCRATCHDIR); do 
-	echo "$part	$(tr '\n' '	' < $DBSCRATCHDIR/$part)" >> $output_filename
-	dboutfilename=$output_filename
+	echo "$part	$(tr '\n' '	' < $DBSCRATCHDIR/$part)" >> $SCRATCHDIR/finished_db.dat
 done
-if [ "$ouput_filename" ]; then
-	echo "updated database file saved as \"$ouput_filename\"."
+# undo any cygwin damage
+if [ "$CYGWIN" ]; then
+	conv -U "$SCRATCHDIR/finished_db.dat" 2>/dev/null
+fi
+# check if db file is different from previous db file and if NOT, delete new db
+if [ "$db_filename" ] && [ -z "$(diff -q $SCRATCHDIR/finished_db.dat "$db_filename")" ]; then
+	echo "Database remains unchanged."
+	db_nochange=true
+else
+	# ask if previous db should be updated or not
+	if [ "$db_filename" ]; then
+		if [ "$db_is_dat" ]; then
+			db_filename_only="$(basename "$db_filename")"
+			read -p '     Update database (U) or create new database? (n) ' retain  < /dev/tty
+			if [ "$retain" == "n" ] || [ "$retain" == "N" ]; then
+				add_to_name db-$(date "+%d-%m-%Y%n").dat
+				dboutfilename=$output_filename
+				echo "     $db_filename_only left unchanged, new database named $dboutfilename."
+			else
+				# archive previous state of database in invisible directory
+				mkdir .previous_databases 2>/dev/null
+				add_to_name .previous_databases/$db_filename_only
+				old_db_name="$output_filename"
+				mv "$db_filename" "$old_db_name"
+				# prepare name for updated db
+				dboutfilename="$db_filename_only"
+				echo "     Database file \"$dboutfilename\" updated."
+			fi
+		else
+			# if the input db was a csv file
+			add_to_name db-$(date "+%d-%m-%Y%n").dat
+			dboutfilename=$output_filename
+			echo "     New database file saved as \"$dboutfilename\"."
+		fi
+	else
+		# if we have no input db
+		add_to_name db-$(date "+%d-%m-%Y%n").dat
+		dboutfilename=$output_filename
+		echo "     New database file saved as \"$dboutfilename\"."
+	fi
+	# make doubly sure nothing is overwritten
+	add_to_name $dboutfilename
+	dboutfilename=$output_filename
+	cp $SCRATCHDIR/finished_db.dat $dboutfilename
 fi
 ### check if out-file is required
 if [ -z "$final_writeout" ]; then
 	echo "The rating is not complete, yet."
-	read -t 10 -p 'Output list for the part that is complete? [Y/n]' req_out < /dev/tty
+	read -p 'Output list for the part that is complete? (Y/n)' req_out < /dev/tty
 	if [ "$req_out" == "n" ] || [ "$req_out" == "N" ]; then
-		echo "updated database file only..."
+		if [ "$db_nochange" ]; then
+			:
+		else
+			echo "updated database file only..."
+		fi
 	else
 		write_inout
 		echo "Output written to \"$categorised_out\""
@@ -195,14 +232,23 @@ else
 	write_inout
 	echo "Output written to \"$categorised_out\""
 fi
-echo "New database written to \"$dboutfilename\""
 ### tidy up
 rm db.dat.tmp 2> /dev/null &
 rm -r $SCRATCHDIR $DBSCRATCHDIR 2> /dev/null &
+### ask if dir should be opened
+read -p 'Would you like to open the output directory? (Y/n)' a  < /dev/tty
+if [ "$a" == "y" ] || [ "$a" == "Y" ] || [ -z "$a" ]; then
+	if [ "$(grep 'CYGWIN' <<< $platform)" ]; then
+		cygstart .
+	elif [ "$(grep 'Darwin' <<< $platform)" ]; then
+		open .
+	else
+		xdg-open .
+	fi
+fi
 # exit
 exit 0
 }
-
 ###################
 # write inout function (writes the wa input file out with assigned categories)
 ###################
@@ -223,8 +269,18 @@ if [ "$in_with_ID" ]; then
 		fi
 	done
 	# new write to outfile
-	sed $extended -e 's/^/\"/' -e 's/\|$/\"/g' -e 's/\|/\",\"/g' <<< "$in_header_out" > $categorised_out
-	#echo "header is: $in_header_out"
+	sed $extended -e 's/^/\"/' -e 's/\|$/\"/g' -e 's/\|/\",\"/g' <<< "$in_header_out" > "$categorised_out"
+	# correct erroneous newline characters in cygwin
+	if [ "$CYGWIN" ]; then
+		conv -U "$categorised_out" 2>/dev/null
+		tr '\n' '*' < "$categorised_out" | sed 's/*//g' > "$categorised_out."
+		echo "" >> "$categorised_out."
+		mv "$categorised_out." "$categorised_out"
+		conv -U "$categorised_out" 2>/dev/null
+	fi
+	if [ "$diagnostic" ]; then
+		echo "header is: "$in_header_out""
+	fi
 else
 	# assemble in variable in_header_out
 	# get cues in original order and insert 'category' after each
@@ -236,8 +292,17 @@ else
 		fi
 	done
 	# new write to outfile
-	sed $extended -e 's/^/\"/' -e 's/\|$/\"/g' -e 's/\|/\",\"/g' <<< "$in_header_out" > $categorised_out
-	#echo "header is: $in_header_out"
+	sed $extended -e 's/^/\"/' -e 's/\|$/\"/g' -e 's/\|/\",\"/g' <<< "$in_header_out" > "$categorised_out"
+	if [ "$CYGWIN" ]; then
+		conv -U "$categorised_out" 2>/dev/null
+		tr '\n' '*' < "$categorised_out" | sed 's/*//g' > "$categorised_out."
+		echo "" >> "$categorised_out."
+		mv "$categorised_out." "$categorised_out"
+		conv -U "$categorised_out" 2>/dev/null
+	fi
+	if [ "$diagnostic" ]; then
+		echo "header is: "$in_header_out""
+	fi
 fi
 # write rows
 if [ -e $SCRATCHDIR/$categorised_out ]; then
@@ -257,10 +322,14 @@ if [ "$in_with_ID" ]; then
 		if [ "$(wc -l <<< "$responses_in_this_row")" -eq "$in_columns" ]; then
 		# if we have a complete row, write it out
 			out_row+="$(tr '\n' '|' <<< "$responses_in_this_row")"
-			write_neatly >> $categorised_out
+			write_neatly >> "$categorised_out"
 		fi
 		# clear variable for next row
 		out_row=
+		# undo any damage by cygwin
+		if [ "$CYGWIN" ]; then
+			conv -U "$categorised_out" 2>/dev/null
+		fi
 	done
 else
 	for n in $(eval echo {1..$(( $in_rows - 1 ))}); do
@@ -276,7 +345,7 @@ else
 		if [ "$(wc -l <<< "$responses_in_this_row")" -eq "$in_columns" ]; then
 		# if we have a complete row, write it out
 			out_row+="$(tr '\n' '|' <<< "$responses_in_this_row")"
-			write_neatly >> $categorised_out
+			write_neatly >> "$categorised_out"
 		fi
 		# clear variable for next row
 		out_row=
@@ -286,32 +355,32 @@ else # this is the else for checking if SCRATCHDIR/categorised_out exists
 	echo "$categorised_out will only contain a header because of the small number of ratings performed."
 fi 
 }
-
 ###################
 # write neatly function (write categorised_out file; func used by write_inout)
 ###################
 write_neatly ( ) {
 sed $extended -e 's/^/\"/' -e 's/\|$/\"/g' -e 's/\|/\",\"/g' -e 's/_/ /g' -e 's/\–/-/g' -e 's/_DOT_/\./g' -e 's=_SLASH_=/=g' -e "s/_APOSTROPHE_/\'/g" -e 's/_LBRACKET_/(/g' -e 's/_RBRACKET_/)/g' -e 's/_ASTERISK_/\*/g' -e 's/_PLUS_/\+/g' <<< $out_row
 }
-
 ################## end defining functions ########################
-
 # initialise some variables
 extended="-r"
-
 # check what platform we're under
 platform=$(uname -s)
 # and make adjustments accordingly
 if [ "$(grep 'CYGWIN' <<< $platform)" ]; then
-	alias clear='printf "\033c"'
+	CYGWIN=true
 elif [ "$(grep 'Darwin' <<< $platform)" ]; then
 	extended="-E"
+	DARWIN=true
+else
+	LINUX=true
 fi
-
 # analyse options
-while getopts dhrvV opt
+while getopts adhrvV opt
 do
 	case $opt	in
+	a)	auxiliary=true
+		;;
 	d)	diagnostic=true
 		;;
 	h)	help
@@ -322,24 +391,30 @@ do
 	v)	verbose=true
 		;;
 	V)	echo "$(basename $0)	-	version $version"
-		echo "(c) 2014 Andreas Buerki - Licensed under the EUPL v. 1.1"
+		echo "(c) 2015 Cardiff University - Licensed under the EUPL v. 1.1"
 		exit 0
 		;;
 	esac
 done
-
 shift $((OPTIND -1))
-
+if [ "$auxiliary" ]; then
+	printf "\033c"
+	echo "          CATEGORISER MODULE"
+	echo
+	echo
+	echo
+	echo
+else
 # splash screen
-clear
-echo "Word Association Data Processor - (c) 2014 Andreas Buerki - licensed under the EUPL v.1.1."
+printf "\033c"
+echo "Word Association Data Processor - (c) 2015 Cardiff University - licensed under the EUPL v.1.1."
 echo
 echo
 echo
 echo
 echo
-echo "			WORD ASSOCIATION DATA CATEGORISER"
-echo "			version $version"
+echo "          WORD ASSOCIATION DATA CATEGORISER"
+echo "          version $version"
 echo 
 echo 
 echo 
@@ -347,89 +422,81 @@ echo
 echo 
 echo 
 echo 
-
-
+fi
 ################ checks on input files
-
 # initialise some variables
 grand_db=
 db_filename=
 wa_in_filename=
 db_is_dat=
-
-
-# check that input files exist
-for file in $@; do
-	if [ -s $file ]; then
-		:
-	else
-		echo "ERROR: could not open $file"
-		exit 1
-	fi
-done
-
-# check what sorts of input files we've got
+# check what sorts of input files we've got and check if they exist
 case $# in
-	0)	echo "ERROR: no input files provided. Minimally, one input file needs to be provided for rating. See $(basename $0) -h or the manual for details." >&2
+	0)	echo "ERROR: no input files provided. Minimally, one input file needs to be provided for rating. See $(basename "$0") -h or the manual for details." >&2
 		exit 1
 		;;
-	1)	if [ "$(echo "$1" | egrep '\.csv')" ]; then
+	1)	if [ -s "$1" ]; then
+			:
+		else
+			echo "ERROR: could not open $1" >&2
+			exit 1
+		fi
+		if [ "$(egrep '\.csv$' <<<"$1" 2>/dev/null)" ]; then
 			# testing if $1 is a db file by looking for fields with first,
 			# second, tenth and fourteenth category of the variable allowed_categories
-			if [ "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" $1)" ]; then
-				echo "ERROR: \"$1\" appears to be a database file. A .csv file for rating also needs to be provided. See $(basename $0) -h"
+			if [ "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" "$1")" ]; then
+				echo "ERROR: \"$1\" appears to be a database file. A .csv file for rating also needs to be provided."
 				exit 1
 			fi
-			read -t 10 -p '			No database for category lookup was provided. Continue? [Y/n]' d \
+			read -p '          No database for category lookup was provided. Continue? (Y/n)' d \
 			< /dev/tty
 			if [ "$(egrep 'N|n' <<< $d)" ]; then
 				echo "exiting"
 				exit 0
 			fi
 			echo; echo
-			wa_in_filename=$1
+			wa_in_filename="$1"
 			no_db=db
 		else
-			echo "ERROR: minimally, one input .csv file needs to be provided for rating. See $(basename $0) -h or the manual for details." >&2
+			echo "ERROR: minimally, one input .csv file needs to be provided for rating. See the manual for details." >&2
 			exit 1
 		fi
 		;;
-	2)	# if a .dat and a .csv file are provided
-		if [ "$(echo "$@" | egrep '\.csv')" ] && [ "$(echo "$@" | egrep '\.dat')" ]; then
-			# if the .csv file is the second one provided
-			if [ "$(echo "$2" | egrep '\.csv')" ]; then
+	2)	if [ -s "$1" ] && [ -s "$2" ]; then
+			:
+		else
+			echo "ERROR: could not access file(s) $1 and/or $2" >&2
+			exit 1
+		fi
+		# if a .dat and a .csv file are provided
+		if [ "$(egrep '\.csv' <<<"$2")" ] && [ "$(egrep '\.dat' <<<"$1")" ]; then
 				# test if $2 is NOT a db file
-				if [ -z "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" $2)" ]; then
-					wa_in_filename=$2
+				if [ -z "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" "$2")" ]; then
+					wa_in_filename="$2"
 				else
 					echo "ERROR: \"$2\" appears to be a database file." >&2
 					exit 1
 				fi
 				# test if $1 is a db file
-				if [ "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories | sed $extended -e 's/,/  .+|/g' -e 's/^/\.+|/' -e 's/$/  /g')" $1)" ]; then
-					db_filename=$1
+				if [ "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories | sed $extended -e 's/,/  .+|/g' -e 's/^/\.+|/' -e 's/$/  /g')" "$1")" ]; then
+					db_filename="$1"
 					db_is_dat=true
 				else
 					echo "ERROR: \"$1\" does not appear to be a properly formatted .dat file" >&2
 					exit 1
 				fi
-			else
-				echo "ERROR: database files need to be provided as the first argument, files to be rated as the second." >&2
-				exit 1 	
-			fi
 		# if two .csv files are provided
-		elif [ "$(echo "$@" | egrep -o '\.csv' | wc -l)" -eq 2 ]; then
+		elif [ "$(egrep '\.csv'<<<"$1")" ] &&  [ "$(egrep '\.csv'<<<"$2")" ]; then
 			# test if $1 is db file
-			if [ "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" $1)" ]; then
-				grand_db=$1
-				db_filename=$1
+			if [ "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" "$1")" ]; then
+				grand_db="$1"
+				db_filename="$1"
 			else
 				echo "ERROR: \"$1\" does not appear to be a database file." >&2
 				exit 1
 			fi
 			# test if $2 is not a db file
-			if [ -z "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" $2)" ]; then
-				wa_in_filename=$2
+			if [ -z "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" "$2")" ]; then
+				wa_in_filename="$2"
 			else
 				echo "ERROR: \"$2\" appears to be a database file, but should be a file with data to be rated." >&2
 				exit 1
@@ -444,10 +511,18 @@ case $# in
 		exit 1
 		;;
 esac
-
-
-
-
+# check if infile might already be categorised
+if [ $(head -1 "$wa_in_filename" | grep -o 'category' | wc -l) -gt 1 ]; then
+	echo "$wa_in_filename appears to be rated already. Please choose a data file which has not yet been rated." >&2
+	exit 1
+elif [ "$(grep 'categorised_' <<<"$wa_in_filename")" ]; then
+	read -p "$wa_in_filename looks as though it has already been rated. Are you sure you wish to continue? (y/N)" sure < /dev/tt
+	if [ "$sure" == "y" ] || [ "$sure" == "Y" ]; then
+		:
+	else
+		exit 1
+	fi
+fi
 ################ create two scratch directories
 # first one to keep db sections in
 DBSCRATCHDIR=$(mktemp -dt categoriserXXX) 
@@ -469,14 +544,12 @@ fi
 if [ "$diagnostic" == true ]; then
 	open $SCRATCHDIR
 fi
-
 # create name of rated WA output file
-add_to_name categorised_$wa_in_filename
-categorised_out=$output_filename
-
-
+wa_in_filename_only="$(basename "$wa_in_filename")"
+add_to_name "categorised_$wa_in_filename_only"
+categorised_out="$output_filename"
 ################ collecting analyst's ID in the background
-(read -p '			Please enter your rater ID (or leave blank) and press ENTER: ' analyst_id  < /dev/tty
+(read -p 'Please type your rater ID (or leave blank) and press ENTER: ' analyst_id  < /dev/tty
 if [ "$analyst_id" ]; then
 	echo $analyst_id > $SCRATCHDIR/analyst_id
 else
@@ -495,8 +568,6 @@ elif [ -z "$no_db" ]; then
 	echo "Detected $(cat $SCRATCHDIR/db_total_cues) cue words and $(cat $SCRATCHDIR/db_rows) rows of responses ..."
 fi
 ) &
-
-
 ################# processing database file ###################
 # initialise some variables
 db_with_ID=
@@ -508,41 +579,34 @@ db_columns=
 db_total_cues=
 db_rows=
 db=
-
 if [ "$db_is_dat" ]; then
 ##### if db is a .dat file #####	
 	# count cues in db
-	db_total_cues=$(cat $db_filename | wc -l)
+	db_total_cues=$(cat "$db_filename" | wc -l)
 	# db_columns are variable for .dat files, so this is not meaningful
 	# db_rows is same as db_total_cues
-	
 	# write info to file to be retrieved by other processes
 	echo $db_total_cues > $SCRATCHDIR/db_total_cues
-
 	# split db into response - category pairs per line in files named after cues
 	while read line; do
 		file=$(cut -f 1 <<< "$line")
 		echo "$(cut -f 2- <<< "$line" | tr '	' '\n')" \
 		> $DBSCRATCHDIR/$file
-	done < $db_filename
-
+	done < "$db_filename"
 elif [ -z "$no_db" ]; then
 ##### if db is a .csv file #####
 # parse csv db file and 
 # - eliminate potential trouble characters
 # - replace spaces w/ underscore and ^M with \n and ',' with '|'
 # - copy file to SCRATCHDIR
-sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' $db_filename |\
+sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' "$db_filename" |\
 sed -e 's/ /_/g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/(/_LBRACKET_/g' -e 's/)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/+/_PLUS_/g' | tr '\r' '\n' > $SCRATCHDIR/db.csv
-
 # checking if respondent ID is included 
 if [ -n "$(head -1 $SCRATCHDIR/db.csv | cut -d '|' -f 1 | grep 'ID')" ]; then
 	db_with_ID=true
 fi
-
 # count db_columns
 db_columns=$(( 1 + $(head -1 $SCRATCHDIR/db.csv | tr -dc '|' | wc -c) ))
-
 # put database in memory and detect and isolate any respondent IDs
 if [ "$db_with_ID" ]; then
 	# put IDs in variable
@@ -561,20 +625,17 @@ else
 	# count cues in db
 	db_total_cues=$(( $db_columns / 2 ))
 fi
-
 # write info to files to be retrieved by other processes
 echo $db_total_cues > $SCRATCHDIR/db_total_cues
 echo $db_rows > $SCRATCHDIR/db_rows
-
 # check if format is consistent
-if [ "$(head -1 <<< $db | egrep -o "WA[[:digit:]]+\|[[:upper:]]*[[:lower:]]+\|*" | wc -l)" -ne "$db_total_cues" ]; then
+if [ "$(head -1 <<< "$db" | egrep -o "WA[[:digit:]]+\|[[:upper:]]*[[:lower:]]+\|*" | wc -l)" -ne "$db_total_cues" ]; then
 	# let ID entering process finish first
 	wait
 	echo "WARNING: there appears to be an inconsistency in the first row of \"$db_filename\". It should contain sequences of \"WA000\" (where 000 is any number of digits), followed, in the next field, by a single word indicating the cue (either all lower case or mixed case). Optionally the first field of the first row can contain text that includes the words \"ID\", and the last field of the first row can contain text that includes either the words \"rater ID\". Please check \"$db_filename\" to make certain that it conforms to these specifications and then retry."
 	rm -r $SCRATCHDIR $DBSCRATCHDIR &
 	exit 1
 fi
-
 # check fields were properly separated: each line should contain the same number of field separators. If that is not the case, throw error and exit
 while read line; do
 	if [ "$(tr -dc '|' <<< $line | wc -c)" -eq "$(( $db_columns - 1 ))" ]; then
@@ -586,9 +647,7 @@ $line" >&2
 		exit 1
 	fi
 done <<< "$db"
-
 # make sure the analyst ID has been obtained before proceeding
-
 # split db into response - category pairs
 i=1
 ii=2
@@ -604,10 +663,8 @@ $line"
 	(( ii += 2 ))
 done
 fi # this is the fi from check whether db is dat or csv
-
 # make sure the analyst ID has been obtained before proceeding
 wait
-
 ################ processing  word-association in-file #########
 # initialise some variables
 in_rows=
@@ -623,18 +680,15 @@ rowcount=-1 # set rowcount to -1 so the first line will be line zero of cues
 if [ "$(cat $SCRATCHDIR/analyst_id)" ]; then
 	rater_id=";$(cat $SCRATCHDIR/analyst_id)"
 fi
-
 # tidy up word-association data in input file
 echo -n "analysing $wa_in_filename ... "
-
 # parse word-association data into variables
-# we need to insert underscores or any spaces in responses
+# we need to insert underscores for any spaces in responses
 # and we need to cater for potential empty responses which would
 # show as 2 (or more) consecutive commas
 # it's also better to replace any potentially confusing special characters
 # these things are taken care of as the file is read in
-in_wa="$(sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' -e 's/ /_/g' -e 's/\|\|/\|_\|/g' -e 's/\|\|/\|_\|/g' -e 's/\;//g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/\(/_LBRACKET_/g' -e 's/\)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/\+/_PLUS_/g' $wa_in_filename | tr '\r' '\n')"
-
+in_wa="$(sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' -e 's/ /_/g' -e 's/\|_/\|/g' -e 's/_\|/\|/g' -e 's/\|\|/\|_\|/g' -e 's/\|\|/\|_\|/g' -e 's/\;//g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/\(/_LBRACKET_/g' -e 's/\)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/\+/_PLUS_/g' "$wa_in_filename" | tr '\r' '\n')"
 # check how many rows in file
 in_rows=$(wc -l <<< "$in_wa") 
 # count in_columns
@@ -648,7 +702,6 @@ $line" >&2
 		exit 1
 	fi
 done <<< "$in_wa"
-
 # check if in-file contains respondent IDs
 if [ -n "$(head -1 <<< "$in_wa" | cut -d '|' -f 1 | grep 'ID')" ]; then
 	in_with_ID=true
@@ -663,14 +716,17 @@ if [ -n "$(head -1 <<< "$in_wa" | cut -d '|' -f 1 | grep 'ID')" ]; then
 	((in_columns-=1))
 	echo "respondent IDs detected ..."
 fi
-
+# estimate number of responses to be rated
+est_n_responses=$(( ($in_rows -1 ) * $in_columns ))
+echo "An estimated $est_n_responses to be rated.";sleep 3
 # process line-by-line
 for line in $in_wa; do
 	#echo "this is line: $line"
 	(( rowcount += 1 ))
 	# from zero line, pick out cues and put them into $in_cues
 	if [ $rowcount -eq 0 ]; then
-		in_cues=$( sed $extended -e 's/[[:digit:]][[:digit:]]*_DOT_._DOT__([[:alpha:]]*)_––_Your_responses*/\1/g' -e 's/[[:digit:]][[:digit:]]*_DOT_.([[:alpha:]]*)/\1/g' -e 's/\|[^:]+:_/|/g' -e 's/^[^:]+:_//' <<< "$line")
+		in_cues=$( sed $extended -e 's/[[:digit:]][[:digit:]]*_DOT_._DOT__([[:alpha:]]*)_–+_Your_responses*/\1/g' -e 's/[[:digit:]][[:digit:]]*_DOT_([[:alpha:]]*)/\1/g' -e 's/\|[^:]+:_/|/g' -e 's/^[^:]+:_//' <<< "$line")
+		in_cues=$(sed -e 's/^_//g' -e 's/\|_/\|/g' <<< $in_cues)
 	else
 	# for all other lines
 		line="$(sed $extended -e 's/^\|/_|/g' -e 's/\|$/|_/g' <<< "$line")"
@@ -732,8 +788,7 @@ for line in $in_wa; do
 				# if category is empty, leave empty
 				else
 					current_assignment=$(echo "$rowcount:$cue|$response|")
-				fi
-				
+				fi			
 				# if there is a previous pair,
 				if [ "$previous_pair" ]; then
 					# write out previous_pair
@@ -744,18 +799,16 @@ for line in $in_wa; do
 						echo "$(cut -d '|' -f 2-3 <<< $previous_pair)$rater_id" >> $DBSCRATCHDIR/$previous_cue 2> /dev/null
 					fi
 				fi
-
 				# move current_assignment to previous_pair
 				previous_pair="$current_assignment"
 				# move cue to previous_cue
 				previous_cue="$cue"
 				#previous_pair="$rowcount:$cue,$response,$category" 
-			
 				# routine for periodic saving and informing of progress
 				(( ratings_done += 1 ))
 				(( counter += 1 ))
 				if [ "$counter" -eq 30 ]; then
-					clear
+					printf "\033c"
 					echo
 					echo
 					echo
@@ -766,6 +819,7 @@ for line in $in_wa; do
 					echo
 					echo "           $ratings_done manual ratings done"
 					echo "           $(cat $SCRATCHDIR/$categorised_out|wc -l|sed $extended -e 's/ //g' -e 's/ //g') responses rated in total (including database lookups)"
+					echo "           out of an estimated $est_n_responses."
 					echo
 					echo
 					echo 
@@ -787,11 +841,10 @@ for line in $in_wa; do
 	fi
 	# reset response number
 	response_number=0
-done < $wa_in_filename
-
+done < "$wa_in_filename"
 # indicate that this is the final writout
 final_writeout=true
-echo "Rating of $wa_in_filename is now COMPLETE!"
+echo "Rating of $wa_in_filename_only is now COMPLETE!"
 # writing output file to pwd
 exit_routine
 # tidy up in the background

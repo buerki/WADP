@@ -1,0 +1,45 @@
+release notes v. 0.5
+********************
+
+categoriser module
+- adjusted category explanation for SS category
+- added total ratings to be done to PROGRESS UPDATE screen
+- fixed an issue with responses that have a leading or trailing empty space:
+  this space is now removed during processing
+
+administrator module
+- added new menu item: turn a rated csv file into a database file
+
+
+release notes v. 0.4
+********************
+
+General changes
+'''''''''''''''
+- integrated individual modules into one overall interface (WADP.sh)
+- moved to interactive format in place of command-line options
+- added double-clickable installers for OS X, (Ubuntu-)Linux and Cygwin/Windows
+- added double-clickable application starters for OS X, (Ubuntu-)Linux and Cygwin/Windows
+- the copyright has been transferred to Cardiff University
+
+Individual changes
+''''''''''''''''''
+categoriser.sh
+- option to overwrite old database added
+
+administrator.sh
+- resolved a bug whereby certain database entriesfailed to be transferred to a
+  combined database. This concerned cases where identical entries existed in
+  both databases.
+
+install.sh
+- new generic install/uninstall script (used by platform-specific installers)
+
+test_data
+- new test database without inconsistencies
+
+README.pdf/README.md:
+- adjusted for changes
+
+manual_0.4.pdf:
+- adjusted for changes

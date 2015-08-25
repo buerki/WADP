@@ -1,11 +1,10 @@
 #!/bin/bash -
-
 ##############################################################################
-# reporter.sh (c) ABuerki 2014
+# reporter.sh (c) 2015 Cardiff Universtiy
+# written by Andreas Buerki
 ####
-version="0.2.1"
+version="0.5"
 # DESCRRIPTION: creates reports for word-association data
-
 ################# defining functions ###############################
 
 #######################
@@ -13,14 +12,13 @@ version="0.2.1"
 #######################
 help ( ) {
 	echo "
-DESCRRIPTION: $(basename $0) creates reports out of word-association data
-SYNOPSIS:     $(basename $0) WA-FILE.csv
+DESCRRIPTION: $(basename "$0") creates reports out of word-association data
+SYNOPSIS:     $(basename "$0") WA-FILE.csv
 
 NOTE:         - WA-FILE.csv is a csv file containing word-association data
               - required format: as output by categoriser.sh
 "
 }
-
 #######################
 # define add_to_name function
 #######################
@@ -30,13 +28,12 @@ NOTE:         - WA-FILE.csv is a csv file containing word-association data
 # plus an incremented count appended.
 ####
 add_to_name ( ) {
-
 count=
-if [ "$(grep '.csv' <<< $1)" ]; then
-	if [ -e $1 ]; then
+if [ "$(grep '.csv' <<< "$1")" ]; then
+	if [ -e "$1" ]; then
 		add=-
 		count=1
-		new="$(sed 's/\.csv//' <<< $1)"
+		new="$(sed 's/\.csv//' <<< "$1")"
 		while [ -e "$new$add$count.csv" ];do
 			(( count += 1 ))
 		done
@@ -44,12 +41,12 @@ if [ "$(grep '.csv' <<< $1)" ]; then
 		count=
 		add=
 	fi
-	output_filename="$(sed 's/\.csv//' <<< $1)$add$count.csv"
-elif [ "$(grep '.dat' <<< $1)" ]; then
-	if [ -e $1 ]; then
+	output_filename="$(sed 's/\.csv//' <<< "$1")$add$count.csv"
+elif [ "$(grep '.dat' <<< "$1")" ]; then
+	if [ -e "$1" ]; then
 		add=-
 		count=1
-		new="$(sed 's/\.dat//' <<< $1)"
+		new="$(sed 's/\.dat//' <<< "$1")"
 		while [ -e "$new$add$count.dat" ];do
 			(( count += 1 ))
 		done
@@ -57,12 +54,12 @@ elif [ "$(grep '.dat' <<< $1)" ]; then
 		count=
 		add=
 	fi
-	output_filename="$(sed 's/\.dat//' <<< $1)$add$count.dat"
-elif [ "$(grep '.txt' <<< $1)" ]; then
-	if [ -e $1 ]; then
+	output_filename="$(sed 's/\.dat//' <<< "$1")$add$count.dat"
+elif [ "$(grep '.txt' <<< "$1")" ]; then
+	if [ -e "$1" ]; then
 		add=-
 		count=1
-		new="$(sed 's/\.txt//' <<< $1)"
+		new="$(sed 's/\.txt//' <<< "$1")"
 		while [ -e "$new$add$count.txt" ];do
 			(( count += 1 ))
 		done
@@ -70,12 +67,12 @@ elif [ "$(grep '.txt' <<< $1)" ]; then
 		count=
 		add=
 	fi
-	output_filename="$(sed 's/\.txt//' <<< $1)$add$count.txt"
+	output_filename="$(sed 's/\.txt//' <<< "$1")$add$count.txt"
 else
-	if [ -e $1 ]; then
+	if [ -e "$1" ]; then
 		add=-
 		count=1
-		while [ -e $1-$count ]
+		while [ -e "$1-$count" ]
 			do
 			(( count += 1 ))
 			done
@@ -86,24 +83,26 @@ else
 	output_filename=$(echo "$1$add$count")
 fi
 }
-
 ################## end defining functions ########################
 # initialise some variables
 extended="-r"
-
 # check what platform we're under
 platform=$(uname -s)
 # and make adjustments accordingly
 if [ "$(grep 'CYGWIN' <<< $platform)" ]; then
-	alias clear='printf "\033c"'
+	CYGWIN=true
 elif [ "$(grep 'Darwin' <<< $platform)" ]; then
 	extended="-E"
+	DARWIN=true
+else
+	LINUX=true
 fi
-
 # analyse options
-while getopts dhvV opt
+while getopts adhvV opt
 do
 	case $opt	in
+	a)	auxiliary=true
+		;;
 	d)	diagnostic=true
 		;;
 	h)	help
@@ -111,60 +110,68 @@ do
 		;;
 	v)	verbose=true
 		;;
-	V)	echo "$(basename $0)	-	version $version"
-		echo "(c) 2014 Andreas Buerki - Licensed under the EUPL v. 1.1"
+	V)	echo "$(basename "$0")	-	version $version"
+		echo "(c) 2015 Cardiff University - Licensed under the EUPL v. 1.1"
 		exit 0
 		;;
 	esac
 done
-
 shift $((OPTIND -1))
-
-
 ################ checks on input files
 # initialise some variables
 in_filename=
 
-# check that input files exist
-for file in $@; do
-	if [ -s $file ]; then
+if [ $# -gt 1 ]; then
+	echo "Only one file is processed at a time. Processing $1 only." >&2
+fi
+
+# check that input file exists
+if [ -s "$1" ]; then
 		:
-	else
-		echo "ERROR: could not open $file"
-		exit 1
-	fi
-done
+else
+	echo "ERROR: could not open $file"
+	exit 1
+fi
 
 # check what sorts of input files we've got
 case $# in
-	0)	echo "ERROR: no input files provided. Minimally, one input file needs to be provided to create a report. See $(basename $0) -h or the manual for details." >&2
+	0)	echo "ERROR: no input files provided. Minimally, one input file needs to be provided to create a report. See the manual for details." >&2
 		exit 1
 		;;
 	1)	if [ "$(echo "$1" | egrep '\.csv')" ]; then
 			# testing format by checking whether there is a 'category' field in
 			# the header
-			if [ -z "$(head -1 $1 | egrep ',\"*category\"*')" ]; then
-				echo "ERROR: \"$1\" does not appear to be of the correct format. A .csv file with wa-responses and categories needs to be provided. See $(basename $0) -h"
+			if [ -z "$(head -1 "$1" | egrep ',\"*category\"*')" ]; then
+				echo "ERROR: \"$1\" does not appear to be of the correct format. A .csv file with wa-responses and categories needs to be provided."
 				exit 1
 			fi
-			in_filename=$1
+			in_filename="$1"
 		fi
 		;;
-	*)	echo "ERROR: $(basename $0) only deals with one input list at a time."
+	*)	echo "ERROR: $(basename "$0") only deals with one input list at a time."
 		exit 1
 		;;
 esac
-
+if [ "$auxiliary" ]; then
+	printf "\033c"
+	echo
+	echo
+	echo
+	echo
+	echo
+else
 ############## splash screen
-clear
-echo "Word Association Data Processor - (c) 2014 Andreas Buerki - licensed under the EUPL v.1.1."
+printf "\033c"
+echo "Word Association Data Processor - (c) 2015 Cardiff University - licensed under the EUPL v.1.1."
 echo
 echo
 echo
 echo
 echo
-echo "			WORD ASSOCIATION DATA REPORTER"
-echo "			version $version"
+echo "          WORD ASSOCIATION DATA REPORTER"
+echo "          version $version"
+fi
+
 echo 
 echo 
 echo 
@@ -172,34 +179,34 @@ echo
 echo 
 echo 
 echo 
-echo "			Please enter required report type(s) and press ENTER"
-echo "			(I)   individual respose profiles"
-echo "			(C)   cue profiles"
-# echo "			(S)   stereotypy rating"
+echo "          Please enter required report type(s) and press ENTER"
+echo "          (I)   individual respose profiles"
+echo "          (C)   cue profiles"
+# echo "          (S)   stereotypy rating"
 read -p '			' report_types < /dev/tty
-case $(tr '[[:lower:]]' '[[:upper:]]' <<< $report_types) in
-	I)	by_respondent=true
+case $report_types in
+	I|i)	by_respondent=true
 		;;
-	C)	by_cue=true
+	C|c)	by_cue=true
 		;;
-	IC|CI)	by_respondent=true
+	IC|CI|ic|ci)	by_respondent=true
 			by_cue=true
 		;;
 	*)		echo "$report_types is not a valid option."
 			read -p 'Please try again ' report_types < /dev/tty
-			case $(tr '[[:lower:]]' '[[:upper:]]' <<< $report_types) in
-				R)	by_respondent=true
+			case $report_types in
+				R|r)	by_respondent=true
 					;;
-				C)	by_cue=true
+				C|r)	by_cue=true
 					;;
-				RC|CR)	by_respondent=true
+				RC|CR|rc|cr)	by_respondent=true
 						by_cue=true
 					;;
 				*)	echo "$report_types is not a valid option. Exiting."
 					exit 1		
 			esac
 esac
-clear
+printf "\033c"
 
 ################ create two scratch directories
 # first one to keep db sections in
@@ -210,7 +217,13 @@ if [ "$RSCRATCHDIR" == "" ] ; then
 	RSCRATCHDIR=${TMPDIR-/tmp/}reporterXXX.1$$
 fi
 if [ "$diagnostic" == true ]; then
-	open $RSCRATCHDIR
+	if [ "$CYGWIN" ]; then
+		cygstart $RSCRATCHDIR
+	elif [ "$DARWIN" ]; then
+		open $RSCRATCHDIR
+	else
+		xdg-open $RSCRATCHDIR
+	fi
 fi
 # second one to keep other auxiliary and temporary files in
 SCRATCHDIR=$(mktemp -dt reporterXXX) 
@@ -220,7 +233,13 @@ if [ "$SCRATCHDIR" == "" ] ; then
 	SCRATCHDIR=${TMPDIR-/tmp/}reporterXXX.1$$
 fi
 if [ "$diagnostic" == true ]; then
-	open $SCRATCHDIR
+	if [ "$CYGWIN" ]; then
+		cygstart $SCRATCHDIR
+	elif [ "$DARWIN" ]; then
+		open $SCRATCHDIR
+	else
+		xdg-open $SCRATCHDIR
+	fi
 fi
 
 ################ processing in-file #########
@@ -241,6 +260,12 @@ in_categories= # holds the category columns of in-file
 
 # read input file
 echo -n "analysing $in_filename ..."
+# create filename only
+in_filename_only="$(basename "$in_filename")"
+# make sure it's the right format if in cygwin
+if [ "$CYGWIN" ]; then
+	conv -U "$in_filename" 2>/dev/null
+fi
 
 # parse data into variables
 # we need to insert underscores in place of any spaces in responses
@@ -248,8 +273,15 @@ echo -n "analysing $in_filename ..."
 # show as 2 (or more) consecutive commas
 # it's also better to replace any potentially confusing special characters
 # these things are taken care of as the file is read in
-in_wa="$(sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' -e 's/ /_/g' -e 's/\|\|/\|_\|/g' -e 's/\|\|/\|_\|/g' -e 's/\;//g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/\(/_LBRACKET_/g' -e 's/\)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/\+/_PLUS_/g' $in_filename | tr '\r' '\n')"
+in_wa="$(sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' -e 's/ /_/g' -e 's/\|\|/\|_\|/g' -e 's/\|\|/\|_\|/g' -e 's/\;//g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/\(/_LBRACKET_/g' -e 's/\)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/\+/_PLUS_/g' "$in_filename" | tr '\r' '\n')"
 echo -n '.'
+# diagnostics
+if [ "$diagnostic" ]; then
+	echo
+	echo "file read as:"
+	echo "$in_wa"
+	read -p 'Press ENTER to continue' a  < /dev/tty
+fi
 # check how many rows in file
 in_rows=$(wc -l <<< "$in_wa")
 # count in_columns
@@ -257,7 +289,7 @@ in_columns=$(( 1 + $(head -1 <<< "$in_wa" | tr -dc '|' | wc -c) ))
 # check fields were properly separated: each line should contain the same number of field separators. If that is not the case, throw error and exit
 while read line; do
 	if [ "$(tr -dc '|' <<< $line | wc -c)" -ne "$(( $in_columns - 1 ))" ]; then
-		echo "ERROR: field separation inconsistency. There should be exactly $db_columns fields per line. $(tr -dc '|' <<< $line | wc -c) were detected here:
+		echo "ERROR: field separation inconsistency. There should be exactly $(( $in_columns - 1)) fields per line. $(tr -dc '|' <<< $line | wc -c) were detected here:
 $line" >&2
 		rm -r $SCRATCHDIR $RSCRATCHDIR &
 		exit 1
@@ -275,7 +307,7 @@ if [ -n "$(cut -d '|' -f 1 <<< "$in_header" | grep 'ID')" ]; then
 	in_respondentIDs=$(cut -d '|' -f 1 <<< "$in_wa")
 	# check if there are non-unique respondent IDs
 	if [ "$(sort <<< "$in_respondentIDs" |uniq| wc -l)" -ne "$(wc -l <<< "$in_respondentIDs")" ]; then
-		echo "ERROR: non-unique respondent IDs in $in_filename. Please verify and try again, or use file without respondent IDs."
+		echo "ERROR: non-unique respondent IDs in $in_filename_only. Please verify and try again, or use file without respondent IDs."
 		rm -r $SCRATCHDIR $RSCRATCHDIR &
 		exit 1
 	fi
@@ -286,6 +318,8 @@ if [ -n "$(cut -d '|' -f 1 <<< "$in_header" | grep 'ID')" ]; then
 	ID_header=$(cut -d '|' -f 1 <<< "$in_header")
 	in_header=$(cut -d '|' -f 2- <<< "$in_header")
 	echo "respondent IDs detected ..."
+else
+	if [ "$diagnostic" ]; then echo "No respondent IDs detected.";sleep 1; fi
 fi
 
 # identify 'category' columns
@@ -308,7 +342,7 @@ field=
 last_cat_column="$(egrep -o '[[:digit:]]+$' <<< "$cat_columns")"
 if [ "$last_cat_column" -lt $(( $in_columns - 1 )) ]; then
 	# if last category column is not the last or penultimate column of the file	
-	echo "ERROR: the last or penultimate column of $in_filename should be a category column."
+	echo "ERROR: the last or penultimate column of $in_filename_only should be a category column."
 	echo "However, the two final colums are: $(egrep -o '\|[^\|]+\|[^\|]+$' <<< "$in_header" | sed $extended -e 's/\|/ /g' -e 's/ /, /2')"
 	echo "Please verify and try again."
 	exit 1
@@ -316,14 +350,19 @@ fi
 last_cat_column=
 # pick out category columns
 in_categories="$(cut -d '|' -f $(sed $extended -e 's/^ //' -e 's/ /,/g' <<< $cat_columns) <<< "$in_wa")"
-
+# report
+if [ "$diagnostic" ]; then 
+	echo "categories are:"
+	echo "$in_categories"
+	read -p 'Press ENTER to continue' a  < /dev/tty
+fi
 ########################### assembling by-respondent report ####################
 if [ "$by_respondent" ]; then
 	echo -n "Gathering figures for report of categories by respondent..."
 	rowcount=
 	# process line-by-line
 	for line in $in_categories; do
-	#echo "this is line: $line"
+	if [ "$diagnostic" ]; then echo;echo "this is line: $line";fi
 	(( rowcount += 1 ))
 	# write every respondent's category frequencies to a tmp file with their ID
 	if [ "$in_respondentIDs" ]; then
@@ -335,7 +374,7 @@ if [ "$by_respondent" ]; then
 	done
 	# assemble overall list of categories
 	extant_cats=$(cut -f 1 $RSCRATCHDIR/* | sort | uniq)
-	#echo "categories are $extant_cats"
+	if [ "$diagnostic" ]; then echo "categories are $extant_cats";fi
 	echo "."
 	##### assemble report
 	# write header and then row by row
@@ -363,8 +402,12 @@ $(sed $extended 's/^\|//g' <<< "$out_row")"
 	fi
 	# write report file
 	# create name of report output file
-	add_to_name i-report_$in_filename
-	sed $extended -e 's/^/\"/' -e 's/$/\"/g' -e 's/\|/\",\"/g' <<< "$report_out" > $output_filename
+	add_to_name i-report_$in_filename_only
+	sed $extended -e 's/^/\"/' -e 's/$/\"/g' -e 's/\|/\",\"/g' <<< "$report_out" > "$output_filename"
+	# undo any cygwin damage
+	if [ "$CYGWIN" ]; then
+		conv -U "$output_filename" 2>/dev/null
+	fi
 	echo "Report saved as \"$output_filename\"."
 	# tidy up
 	extant_cats=
@@ -410,8 +453,12 @@ $(sed $extended 's/^\|//g' <<< "$out_row")"
 	done
 	# write report file
 	# create name of report output file
-	add_to_name c-report_$in_filename
-	sed $extended -e 's/^/\"/' -e 's/$/\"/g' -e 's/\|/\",\"/g' <<< "$report_out" > $output_filename
+	add_to_name c-report_$in_filename_only
+	sed $extended -e 's/^/\"/' -e 's/$/\"/g' -e 's/\|/\",\"/g' <<< "$report_out" > "$output_filename"
+	# undo any cygwin damage
+	if [ "$CYGWIN" ]; then
+		conv -U "$output_filename" 2>/dev/null
+	fi
 	echo "Report saved as \"$output_filename\"."
 	# tidy up
 	extant_cats=
@@ -423,4 +470,17 @@ fi
 # tidy up
 if [ -z "$diagnostic" ]; then
 	rm -r $RSCRATCHDIR $SCRATCHDIR &
+fi
+
+# ask if directory should be opened
+echo ""
+read -p 'Would you like to open the output directory? (Y/n)' a  < /dev/tty
+if [ "$a" == "y" ] || [ "$a" == "Y" ] || [ -z "$a" ]; then
+	if [ "$CYGWIN" ]; then
+		cygstart .
+	elif [ "$DARWIN" ]; then
+		open .
+	else
+		xdg-open .
+	fi
 fi

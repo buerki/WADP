@@ -1,9 +1,9 @@
-![WADP](icon.png)
+![WADP](src/wicon.png)
 
 The Word Association Data Processor (WADP)
 ======================
 
-*see the included manual_0.3.pdf for detailed information, including a tutorial*
+*see the included manual_0.5.pdf for detailed information, including a tutorial*
 
 *******
 DESCRIPTION
@@ -24,58 +24,32 @@ and more. For full documentation, a tutorial as well as installation instruction
 
 
 The WADP is cross-platform and currently available as beta software. It was
-tested under OS X, Xubuntu Linux, and via Cygwin on Windows 7 and 8 and should work well on any plat-
-form that can run the bash shell.
+tested under OS X, Xubuntu Linux, and via Cygwin on Windows 7 and 8 and should work well on any platform that can run the bash shell.
+
+
+*******
+COMPATIBLE SYSTEMS
+
+The WADP was tested on OS X (v. 10.8 10.9 and 10.10), Xubuntu (v. 14.04) and Cygwin (v. 1.8) under Windows 7 and 8. It should run on all platforms on which a bash shell is installed, which includes Windows with the [Cygwin](cygwin.com) package installed.[^1]
+[^1]: The supplied WADP-installer and double-clickable launcher assume that Cygwin is installed in `C:\cygwin` which is the default location. For more information regarding Cygwin requirements, see the WADP manual.
 
 *******
 INSTALLATION
 
+Using the supplied installers:
 
-The WADP was tested on MacOS X (v. 10.8 and 10.9), Ubuntu Linux (version Xubuntu 14.04) and Cygwin (version 1.7.30), but should run on all platforms on which a bash shell is installed. This includes Windows with the [Cygwin](cygwin.com) package installed.
-Generally, all scripts (i.e. the files ending in .sh) should be placed in a location that is in the user's $PATH variable (or the location should be added to the $PATH variable) so they can be called from the command line. A good place to put the scripts might be /usr/local/bin or $HOME/bin.
-
-Detailed instructions of how to do this are given here:
-
-1. open the Terminal application 
-
-      MacOS X: in Applications/Utilities
-      
-      Ubuntu Linux: via menu Applications>Accessories>Terminal
-      
-      Cygwin: via the link on the desktop to Cygwin Terminal
-2. type: `mkdir /usr/local/bin`	(it may say 'File exists', that's fine)
-3. type: `echo $PATH` (if you can see /usr/local/bin somewhere in the
-      output, move to step 8, if not carry on with the next step)
-4. type: `cd $HOME`
-      type: `cp .profile .profile.bkup` (if it says there no such file,
-      that's fine)
-5. type: `vi .profile`
-6. move to an empty line and press the `i` key, then enter the
-      following: `PATH=/usr/local/bin:$PATH`
-7. press ESC, then type `:wq!`
-8. move into the `WADP` directory. This can be done by typing `cd ` (make sure there is a space after `cd ` but don't press return yet) and then dragging the WADP folder onto the Terminal window and pressing return.
-9. type: `sudo cp *.sh /usr/local/bin` (you will need to enter an admin password)
-
-      Done!
-
-The installation can be verified by calling each script's help function for the command line of a Terminal window:
-
-1. open a new terminal window
-
-2. Type `categoriser.sh -h` and hit enter. Try the same with `administrator.sh -h`, `reporter.sh -h`, etc.
-
-3. If the help texts appear, all is in order.
-
-For further tests, you may wish to run SubString on the test data (see next section)
+For OS X, Xubuntu and Cygwin, installers are provided. Inside the WADP directory, double-click on `Xubuntu_installer` (for Xubuntu), `OSX_installer` (OS X) or `Cygwin_installer`/`Cygwin64_installer` (for Cygwin regular and 64-bit installations).[^3]
+[^3]: If the double-clickable installers fail to run, open a terminal window and run the `install.sh` instead.
+These installers replace previous versions of the installed files. It may be necessary to log out and log in again before the installation takes effect. It should now be possible to launch the WADP by double-clicking on the yellow WADP icon placed on the desktop in in the WADP directory. For further details, see the included manual.
 
 *******
 MANUAL
 
-A manual detailing the operation of the WADP and a tutorial is supplied as a PDF document in the WADP directory.
+A manual detailing the operation of the WADP, including a tutorial, is supplied as a PDF document in the WADP directory.
 
 
 *******
-AUTHOR
+WRITTEN BY
 
 Andreas Buerki, <buerkiA@cardiff.ac.uk>  
 
@@ -96,7 +70,7 @@ http://applij.oxfordjournals.org/content/36/1/23.full.pdf+html
 *********
 COPYRIGHT
 
-Copyright 2015, Andreas Buerki
+Copyright 2015, Cardiff University
 Licensed under the EUPL V.1.1. (the European Union Public Licence) which is an open-source licence (see the EUPL.pdf file for the full licence).
 
 The project resides at [http://buerki.github.com/WADP/](http://buerki.github.com/WADP/) and new versions will be posted there. Suggestions and feedback are welcome. To be notified of new releases, go to https://github.com/buerki/WADP, click on the 'Watch' button and sign in.
