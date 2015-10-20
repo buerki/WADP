@@ -4,7 +4,7 @@ export PATH="$PATH:/usr/local/bin:/usr/bin:/bin:"$HOME/bin"" # needed for Cygwin
 # WADP.sh (c) 2015 Cardiff University
 # written by Andreas Buerki
 ####
-version="0.5"
+version="0.5.2"
 # DESCRRIPTION: processes word-association data
 ################# defining functions ###############################
 #
@@ -198,25 +198,27 @@ echo "          (C)    combine two database files into one"
 echo "          (T)    turn rated csv file into a database"
 read -p '          ' task
 case $task in
-		P|p)	export r_task=true
-				export list_only=true
+		P|p)	list_only=true
 			;;
-		R|r)	export r_task=true
+		R|r)	r_task=true
+				echo
+				read -p 'Please enter your rater ID (or leave blank) and press ENTER: ' rater_id
+				if [ -z "$rater_id" ]; then
+						rater_id="anonymous"
+				fi
 			;;
-		C|c)	export c_task=true
+		C|c)	c_task=true
 			;;
-		T|t)	export t_task=true
+		T|t)	t_task=true
 			;;
 		*)		echo "ERROR: $task is not a valid choice" >&2
 				exit 1
 esac
-if [ "$r_task" ] && [ -z "$list_only" ]; then
-	echo
-	read -p 'Please enter your rater ID (or leave blank) and press ENTER: ' rater_id
-	if [ -z "$rater_id" ]; then
-		rater_id="anonymous"
-	fi
+# if r-task, ask for rater ID
+if [ "$r_task" ]; then
+	echo "r_task is $r_task"
 fi
+# if t-task, ask for csv file
 if [ "$t_task" ]; then
 	printf "\033c"
 	echo
@@ -235,6 +237,7 @@ if [ "$t_task" ]; then
 			return
 		fi
 	fi
+# otherwise, ask for 2 database files
 else
 	printf "\033c"
 	echo
@@ -273,27 +276,40 @@ else
 fi
 # get rid of any single quotation marks that might have attached
 export database1="$(sed "s/'//g" <<<"$database1")"
-if [ "$database2"]; then
+if [ "$database2" ]; then
 	export database2="$(sed "s/'//g" <<<"$database2")"
 fi
-# change dir to that of the first database
+# change dir to that of the first database/csv-file
 export working_dirname="$(dirname "$database1" | sed "s/'//g")"
 cd "$working_dirname" 2>/dev/null || dirfail=true
 if [ "$diagnostic" ]; then 
 	echo "now in $(pwd). dirname is $working_dirname"
 	read -p 'press ENTER to continue ' xxx < /dev/tt
 fi
+# if t-task, call administrator.sh -a with csv file as argument
 if [ "$t_task" ]; then
 	"$HOME/bin/administrator.sh" -a "$database1"
 else
 	# check if there are differences in the databases
 	if [ "$(diff -q "$database1" "$database2")" ]; then
-		"$HOME/bin/administrator.sh" -a "$database1" "$database2"
-	else
+		# call administrator.sh -a with 2 database files are arguments
+		if [ "$c_task" ]; then
+			"$HOME/bin/administrator.sh" -ac "$database1" "$database2"
+		elif [ "$r_task" ]; then
+			"$HOME/bin/administrator.sh" -ar "$database1" "$database2"
+		else
+			"$HOME/bin/administrator.sh" -ap "$database1" "$database2"
+		fi
+	else # if no differences
 		echo "$(basename "$database1") and $(basename "$database2") are identical."
 		sleep 2
 	fi
 fi
+# reset task selectors
+c_task=
+t_task=
+r_task=
+list_only=
 }
 ############### end defining functions #####################
 

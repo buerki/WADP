@@ -3,7 +3,7 @@
 # administrator.sh (c) 2015 Cardiff University
 # written by Andreas Buerki
 ####
-version="0.5"
+version="0.5.2"
 # DESCRRIPTION: performs administrative functions on wa dbs and data files
 ################# defining functions ###############################
 
@@ -14,9 +14,11 @@ help ( ) {
 	echo "
 DESCRRIPTION: $(basename "$0") performs administrative functions on .dat files
               and .csv files containing word-association data
-SYNOPSIS:     $(basename "$0") DB.dat DB.dat
+SYNOPSIS:     $(basename "$0") (DB.dat DB.dat | rated_list.csv)
 
-NOTE:         $(basename "$0") -V for copyright and licensing information
+OPTIONS:      -a run in auxiliary script mode
+              -h show this help message
+              -V show copyright and licensing information
 "
 }
 #######################
@@ -92,7 +94,7 @@ echo
 echo
 echo "	cue: $cue"
 echo
-sed $extended -e 's/</*response missing*/' -e 's/>/*response missing*/' -e 's/		//g' -e 's/\|/ -> /' -e 's/\|/ vs. /' -e 's/\|/ -> /' -e 's/^/	/' <<< "$difference"
+sed $extended -e 's/</*response missing*/' -e 's/>/*response missing*/' -e 's/		//g' -e 's/\|/ -> /' -e 's/\|/ vs. /' -e 's/\|/ -> /' -e 's/^/	/' <<< "$difference" | sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g'
 # following menu items are conditional so no empty side can be chosen
 if [ -z "$(egrep '>' <<< "$difference")" ]; then echo "	(L)	choose left";fi
 if [ -z "$(egrep '<' <<< "$difference")" ]; then echo "	(R)	choose right";fi
@@ -112,7 +114,7 @@ case $r in
 	*)	read -p '	Enter new category here: ' new_cat
 		new_cat="$(tr '[[:lower:]]' '[[:upper:]]' <<<"$new_cat")"
 		echo "$(cut -d '|' -f 1 <<< $difference|sed 's/							//g')|$new_cat;$rater_id" >> $R_SCRATCHDIR/$cue
-		echo "------> resolved as: $(cut -d '|' -f 1 <<< $difference|sed 's/							//g')|$new_cat" >> $SCRATCHDIR/$log_name
+		echo "------> resolved as: $(cut -d '|' -f 1 <<< $difference|sed 's/							//g')|$new_cat" | sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' >> $SCRATCHDIR/$log_name
 		;;
 esac
 printf "\033c"
@@ -129,7 +131,7 @@ elif [ "$(grep 'Darwin' <<< $platform)" ]; then
 	extended="-E"
 fi
 # analyse options
-while getopts adhvV opt
+while getopts adhvVprct opt
 do
 	case $opt	in
 	a)	auxiliary=true
@@ -144,6 +146,14 @@ do
 	V)	echo "$(basename "$0")	-	version $version"
 		echo "(c) 2015 Cardiff University - Licensed under the EUPL v. 1.1"
 		exit 0
+		;;
+	p)	list_only=true
+		;;
+	r)	r_task=true
+		;;
+	c)	c_task=true
+		;;
+	t)	t_task=true
 		;;
 	esac
 done
@@ -259,8 +269,7 @@ if [ "$dat_infile1_name" ]; then
 		echo "          (T)    turn rated csv file into a database"
 		read -p '          ' task
 		case $task in
-				P|p)	r_task=true
-						list_only=true
+				P|p)	list_only=true
 					;;
 				R|r)	r_task=true
 					;;
@@ -271,13 +280,17 @@ if [ "$dat_infile1_name" ]; then
 				*)		echo "ERROR: $task is not a valid choice" >&2
 						exit 1
 		esac
-	fi
-	if [ "$r_task" ] && [ -z "$list_only" ]; then
-		echo
-		read -p 'Please enter your rater ID (or leave blank) and press ENTER: ' rater_id
-		if [ -z "$rater_id" ]; then
-			rater_id="anonymous"
+		if [ "$r_task" ] && [ -z "$list_only" ]; then
+			echo
+			read -p 'Please enter your rater ID (or leave blank) and press ENTER: ' rater_id
+			if [ -z "$rater_id" ]; then
+				rater_id="anonymous"
+			fi
 		fi
+	fi
+	# if list_only is active, also activate r-task
+	if [ "$list_only" ]; then
+		r_task=true
 	fi
 ################# processing dat files ###################
 	# count cues in dat files
@@ -286,15 +299,13 @@ if [ "$dat_infile1_name" ]; then
 	# split db into response - category pairs per line in files named after cues
 	while read line; do
 		file=$(cut -f 1 <<< "$line" | sed 's/﻿//g')
-		echo "$(cut -f 2- <<< "$line" | tr '	' '\n' | sort)" \
-		> $SCRATCHDIR1/$file
+		echo "$(cut -f 2- <<< "$line" | tr '	' '\n' | sort | sed -e 's/\?/QQUUEESSTTIIOONNMMAARRKK/g' -e 's/\^/CCIIRRCCUUMMFFLLEEXX/g' -e 's/#/HHAASSHHTTAAGG/g' -e 's/\!/EEXXCCLLAAMM/g')" > $SCRATCHDIR1/$file
 	done < "$dat_infile1"
 	while read line; do
 		file=$(cut -f 1 <<< "$line" | sed 's/﻿//g')
-		echo "$(cut -f 2- <<< "$line" | tr '	' '\n' | sort)" \
-		> $SCRATCHDIR2/$file
+		echo "$(cut -f 2- <<< "$line" | tr '	' '\n' | sort | sed -e 's/\?/QQUUEESSTTIIOONNMMAARRKK/g' -e 's/\^/CCIIRRCCUUMMFFLLEEXX/g' -e 's/#/HHAASSHHTTAAGG/g' -e 's/\!/EEXXCCLLAAMM/g')" > $SCRATCHDIR2/$file
 	done < "$dat_infile2"
-	##### begin log file (the is relative to task, so 3 different ways)
+	##### begin log file (this is relative to task, so 3 different ways)
 	if [ "$list_only" ]; then
 		date > $SCRATCHDIR/$log_name
 		echo "Differences $dat_infile1_name vs. $dat_infile2_name" >> $SCRATCHDIR/$log_name
@@ -324,7 +335,7 @@ if [ "$dat_infile1_name" ]; then
 		echo
 		echo "$WARN The following cues differ:"|sed 's/^ //g' | tee -a $SCRATCHDIR/$log_name
 		echo "$dat_infile1_name			vs.		  $dat_infile2_name" | tee -a $SCRATCHDIR/$log_name
-		diff -y --suppress-common-lines $SCRATCHDIR/cues[12] |sed $extended -e 's/</*cue missing*		/g' -e 's/	+ *>/*cue missing*						/g'| tee -a $SCRATCHDIR/$log_name
+		diff -y --suppress-common-lines $SCRATCHDIR/cues[12] |sed $extended -e 's/</*cue missing*		/g' -e 's/	+ *>/*cue missing*						/g'| sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' | tee -a $SCRATCHDIR/$log_name
 		echo
 		# move cues only found in dat_infile1 to results
 		for single_cue in $(comm -23 $SCRATCHDIR/cues[12]); do
@@ -353,7 +364,7 @@ if [ "$dat_infile1_name" ]; then
 	# remaining cues should now be identical, but check
 	if [ "$(diff $SCRATCHDIR/cues[12])" ]; then
 		echo "ERROR in processing encountered: the following cues should be common to both .dat files but are not" | tee -a $SCRATCHDIR/$log_name
-		diff -y --suppress-common-lines $SCRATCHDIR/cues[12] | tee -a $SCRATCHDIR/$log_name
+		diff -y --suppress-common-lines $SCRATCHDIR/cues[12] | sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' | tee -a $SCRATCHDIR/$log_name
 		echo "cannot continue."
 		rm -r $SCRATCHDIR $SCRATCHDIR1 $SCRATCHDIR2 $R_SCRATCHDIR &
 		exit 1
@@ -367,13 +378,13 @@ if [ "$dat_infile1_name" ]; then
 			printf "\033c"
 			echo
 			echo
-			echo
+			echo "" | tee -a $SCRATCHDIR/$log_name
 			echo "$WARN The following responses to cue \"$cue\" differ:"|sed 's/^ //g' | tee -a $SCRATCHDIR/$log_name
 			echo
 			echo "$dat_infile1_name			vs.		  $dat_infile2_name" | tee -a $SCRATCHDIR/$log_name
 			sort <<< "$resp1" | sed '/^$/d' > $SCRATCHDIR/resp1
 			sort <<< "$resp2" | sed '/^$/d' > $SCRATCHDIR/resp2
-			diff -y --suppress-common-lines $SCRATCHDIR/resp[12] | sed $extended -e 's/</*reponse missing*/g' -e 's/	+ *>/*response missing*					/'| tee -a $SCRATCHDIR/$log_name
+			diff -y --suppress-common-lines $SCRATCHDIR/resp[12] | sed $extended -e 's/</*reponse missing*/g' -e 's/	+ *>/*response missing*					/'|sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g'| tee -a $SCRATCHDIR/$log_name
 			# copy over responses only found in dat_infile1
 			for single_resp in $(comm -23 $SCRATCHDIR/resp[12]); do
 				# copy it over and remove it
@@ -409,7 +420,7 @@ if [ "$dat_infile1_name" ]; then
 		sort <<< "$resp2" > $SCRATCHDIR/resp2
 		if [ "$resp1" != "$resp2" ]; then
 			echo "ERROR in processing encountered: the following responses should be common to both .dat files but are not" | tee -a $SCRATCHDIR/$log_name
-			diff -y --suppress-common-lines $SCRATCHDIR/resp[12] | tee -a $SCRATCHDIR/$log_name
+			diff -y --suppress-common-lines $SCRATCHDIR/resp[12] |sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g'| tee -a $SCRATCHDIR/$log_name
 			echo "cannot continue."
 			if [ -z "$diagnostic" ]; then
 				rm -r $SCRATCHDIR $SCRATCHDIR1 $SCRATCHDIR2 $R_SCRATCHDIR &
@@ -490,7 +501,7 @@ if [ "$dat_infile1_name" ]; then
 					echo | tee -a $SCRATCHDIR/$log_name
 				fi
 				# convert diffs for log output and write to log
-				sed $extended -e 's/		//g' -e 's/\|/vs./2' -e 's/	[[:upper:]]+_*[[:upper:]]*\|/	/g' -e 's/\|/	/g' -e 's/ +/	/g' -e 's/		/	/g' <<< "$diffs" >> $SCRATCHDIR/$log_name
+				sed $extended -e 's/		//g' -e 's/\|/vs./2' -e 's/	[[:upper:]]+_*[[:upper:]]*\|/	/g' -e 's/\|/	/g' -e 's/ +/	/g' -e 's/		/	/g' <<< "$diffs" |sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' >> $SCRATCHDIR/$log_name
 				# now write resolved/combined ratings to results
 				if [ -z "$list_only" ] && [ "$r_task" ]; then
 					printf "\033c"
@@ -512,7 +523,8 @@ if [ "$dat_infile1_name" ]; then
 	if [ -z "$list_only" ] && [ "$r_task" ]; then
 		add_to_name resolved-db-$(date "+%d-%m-%Y%n").dat
 		for part in $(ls $R_SCRATCHDIR); do 
-			echo "$part	$(tr '\n' '	' < $R_SCRATCHDIR/$part)" | sed '/^$/d'>> $output_filename
+			echo "$part	$(tr '\n' '	' < $R_SCRATCHDIR/$part)" | sed '/^$/d'>> $SCRATCHDIR/$output_filename
+			sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' $SCRATCHDIR/$output_filename > $output_filename
 		done
 		echo "Resolved database saved as \"$output_filename\"." | tee -a $SCRATCHDIR/$log_name
 		# undo any cygwin damage
@@ -520,20 +532,20 @@ if [ "$dat_infile1_name" ]; then
 			conv -U "$output_filename" 2>/dev/null
 		fi
 		# ending routine
-		read -t 60 -p 'Would you like to output the log file? (y/N)' r
+		read -p 'Would you like to output the log file? (y/N)' r
 		if [ "$r" == "Y" ] || [ "$r" == "y" ]; then
-			mv $SCRATCHDIR/$log_name $log_name || echo "ERROR: could not find log."
+			sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' $SCRATCHDIR/$log_name > $log_name || echo "ERROR: could not find log."
 			echo "Log file \"$log_name\" placed in $(pwd)."
 		fi
 	elif [ "$list_only" ]; then
 		printf "\033c"
-		cat $SCRATCHDIR/$log_name
+		sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' $SCRATCHDIR/$log_name
 		echo 
 		echo
-		read -t 60 -p 'Save this report to file? (y/N)' r
+		read -p 'Save this report to file? (y/N)' r
 		if [ "$r" == "Y" ] || [ "$r" == "y" ]; then
 			add_to_name difference_report.txt
-			mv $SCRATCHDIR/$log_name $output_filename
+			sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' $SCRATCHDIR/$log_name > $output_filename
 			echo "Report named \"$output_filename\" saved in $(pwd)."
 		else
 			do_not_ask=true
@@ -541,17 +553,18 @@ if [ "$dat_infile1_name" ]; then
 	else # i.e. if c_task
 		add_to_name combined-db-$(date "+%d-%m-%Y%n").dat
 		for part in $(ls $R_SCRATCHDIR); do 
-			echo "$part	$(tr '\n' '	' < $R_SCRATCHDIR/$part)" >> "$output_filename"
+			echo "$part	$(tr '\n' '	' < $R_SCRATCHDIR/$part)" >> "$SCRATCHDIR/$output_filename"
+			sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' $SCRATCHDIR/$output_filename > $output_filename
 		done
 		echo "combined database saved as \"$output_filename\"."
 		# ending routine
 		if [ "$warnings" ]; then
-			mv $SCRATCHDIR/$log_name $log_name || echo "ERROR: could not find log."
+			sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' $SCRATCHDIR/$log_name > $log_name || echo "ERROR: could not find log."
 			echo "Log file \"$log_name\" placed in $(pwd)."
 		else
-			read -t 60 -p 'Would you like to output the log file? (y/N)' r
+			read -p 'Would you like to output the log file? (y/N)' r
 			if [ "$r" == "Y" ] || [ "$r" == "y" ]; then
-				mv $SCRATCHDIR/$log_name $log_name || echo "ERROR: could not find log."
+				sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' $SCRATCHDIR/$log_name > $log_name || echo "ERROR: could not find log."
 				echo "Log file \"$log_name\" placed in $(pwd)."
 			fi
 		fi

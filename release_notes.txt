@@ -1,3 +1,11 @@
+release notes v. 0.5.2
+**********************
+
+administrator module
+- fixed a bug whereby the secondary processing menu would stick to the previously
+  selected option, even though a different new option was chosen
+
+
 release notes v. 0.5
 ********************
 
