@@ -3,7 +3,7 @@ export PATH="$PATH:/usr/local/bin:/usr/bin:/bin" # needed for Cygwin
 ##############################################################################
 # installer (c) 2015 Cardiff University, licensed under the EUPL V.1.1.
 # written by Andreas Buerki
-version="0.3"
+version="0.4"
 ####
 ## set installation variables
 export title="WADP"
@@ -13,6 +13,8 @@ export DESTINATION2="/" # for cygwin-only files
 export cygwin_only="wicon.ico"
 export linux_only="wicon.png"
 export osx_only="WADP.app"
+export licence="European Union Public Licence (EUPL) v. 1.1."
+export URL="https://joinup.ec.europa.eu/community/eupl/og_page/european-union-public-licence-eupl-v11"
 # define functions
 help ( ) {
 	echo "
@@ -84,7 +86,30 @@ if [ "$(grep "$title" <<<"$sourcedir")" ]; then
 	:
 else
 	echo "This installer script appears to have been moved out of its original directory. Please move it back into the $title directory and run it again." >&2
+	sleep 2
 	exit 1
+fi
+###########
+# getting agreement on licence
+###########
+echo "This software is licensed under the open-source"
+echo "$licence"
+echo "The full licence is found at"
+echo "$URL"
+echo "or in the accompanying licence file."
+echo "Before installing and using the software, we ask"
+echo "that you agree to the terms of this licence."
+echo "If you agree, please type 'agree' and press ENTER,"
+echo "otherwise just press ENTER."
+read -p '> ' d < /dev/tty
+if [ "$d" != "agree" ]; then
+	echo
+	echo "Since the installation and use of this software requires"
+	echo "agreement to the licence, installation cannot continue."
+	sleep 2
+	exit 1
+else
+	echo "Thank you."
 fi
 ###########
 # setting path
@@ -211,12 +236,12 @@ StartupNotify=false" > $sourcedir/WADP.desktop
 	echo "To start WADP, double-click on the WADP launcher."
 	echo "Feel free to move it anywhere convenient."
 elif [ "$DARWIN" ]; then
-	cp -r $sourcedir/$osx_only /Applications || sudo cp -r $sourcedir/$osx_only /Applications 
-	cp -r $sourcedir/$osx_only $(dirname $sourcedir)
+	cp -r "$sourcedir/$osx_only" /Applications || sudo cp -r "$sourcedir/$osx_only" /Applications 
+	cp -r "$sourcedir/$osx_only" "$(dirname "$sourcedir")"
 	echo "The application WADP was placed in your Applications folder."
 	read -t 10 -p 'Create icon on the desktop? (Y/n) ' d < /dev/tty
 	if [ "$d" == "y" ] || [ "$d" == "Y" ] || [ -z "$d" ]; then
-		cp -r $sourcedir/$osx_only $HOME/Desktop
+		cp -r "$sourcedir/$osx_only" $HOME/Desktop
 	fi
 	echo "Installation complete."
 	echo

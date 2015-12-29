@@ -1,3 +1,20 @@
+release notes v. 0.6
+********************
+
+categoriser module
+- fixed a problem which appeared in v.0.5 when running under Cygwin, whereby the cues were truncated or not displayed at all
+
+administrator module
+- when ratings are resolved, they are marked as resolved ratings in the database by appending RESOLVED to rater IDs
+- fixed a problem with the (T) function that resulted in malformed database files
+
+reporter module
+- added function to produce primary responses report
+- added function to derive inter-rater reliability ratio
+
+install.sh
+- added requirement to agree to the software licence
+
 release notes v. 0.5.2
 **********************
 

@@ -3,7 +3,7 @@
 # categoriser.sh (c) 2015 Cardiff University
 # written by Andreas Buerki
 ####
-version="0.5"
+version="0.6"
 # DESCRRIPTION: assigns categories to word-association data
 ################ the following section can be adjusted
 # the key used for category assignments
@@ -726,7 +726,7 @@ for line in $in_wa; do
 	# from zero line, pick out cues and put them into $in_cues
 	if [ $rowcount -eq 0 ]; then
 		in_cues=$( sed $extended -e 's/[[:digit:]][[:digit:]]*_DOT_._DOT__([[:alpha:]]*)_–+_Your_responses*/\1/g' -e 's/[[:digit:]][[:digit:]]*_DOT_([[:alpha:]]*)/\1/g' -e 's/\|[^:]+:_/|/g' -e 's/^[^:]+:_//' <<< "$line")
-		in_cues=$(sed -e 's/^_//g' -e 's/\|_/\|/g' <<< $in_cues)
+		in_cues=$(sed -e 's/^_//g' -e 's/|_/|/g' <<< $in_cues)
 	else
 	# for all other lines
 		line="$(sed $extended -e 's/^\|/_|/g' -e 's/\|$/|_/g' <<< "$line")"

@@ -3,7 +3,7 @@
 The Word Association Data Processor (WADP)
 ======================
 
-*see the included manual_0.5.pdf for detailed information, including a tutorial*
+*see the included manual_0.6.pdf for detailed information, including a tutorial*
 
 *******
 DESCRIPTION
@@ -78,6 +78,6 @@ The project resides at [http://buerki.github.com/WADP/](http://buerki.github.com
 *******
 WARNING
 
-As article 7 of the EUPL states, the WADP is a work in progress, which is continuously improved. It is not a finished work and may therefore contain defects or “bugs” inherent to this type of software development.
+As per article 7 of the EUPL, the WADP is a work in progress, which is continuously improved. It is not a finished work and may therefore contain defects or “bugs” inherent to this type of software development.
 For the above reason, the software is provided under the Licence on an “as is” basis and without warranties of any kind concerning it, including without limitation merchantability, fitness for a particular purpose, absence of defects or errors, accuracy, non-infringement of intellectual property rights other than copyright as stated in Article 6 of this Licence.
 This disclaimer of warranty is an essential part of the Licence and a condition for the grant of any rights to the WADP.

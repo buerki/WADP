@@ -3,7 +3,7 @@
 # administrator.sh (c) 2015 Cardiff University
 # written by Andreas Buerki
 ####
-version="0.5.2"
+version="0.6"
 # DESCRRIPTION: performs administrative functions on wa dbs and data files
 ################# defining functions ###############################
 
@@ -102,10 +102,10 @@ echo "	(N)	input new category assignment"
 echo "	(D)	discard both ratings"
 read -p '	' r
 case $r in
-	l|L)	echo "$(cut -f 1 <<< $difference);$rater_id" >> $R_SCRATCHDIR/$cue
+	l|L)	echo "$(cut -f 1 <<< $difference);$rater_id;RESOLVED" >> $R_SCRATCHDIR/$cue
 			echo "------> resolved as: $(cut -f 1 <<< $difference)" >> $SCRATCHDIR/$log_name
 		;;
-	r|R)	echo "$(cut -d '|' -f 3-4 <<< $difference|sed 's/	//g');$rater_id" >> $R_SCRATCHDIR/$cue
+	r|R)	echo "$(cut -d '|' -f 3-4 <<< $difference|sed 's/	//g');$rater_id;RESOLVED" >> $R_SCRATCHDIR/$cue
 			echo "------> resolved as: $(cut -d '|' -f 3-4 <<< $difference|sed 's/	//g')" >> $SCRATCHDIR/$log_name
 		;;
 	d|D)	echo "	discarding those ratings..."
@@ -113,7 +113,7 @@ case $r in
 		;;
 	*)	read -p '	Enter new category here: ' new_cat
 		new_cat="$(tr '[[:lower:]]' '[[:upper:]]' <<<"$new_cat")"
-		echo "$(cut -d '|' -f 1 <<< $difference|sed 's/							//g')|$new_cat;$rater_id" >> $R_SCRATCHDIR/$cue
+		echo "$(cut -d '|' -f 1 <<< $difference|sed 's/							//g')|$new_cat;$rater_id;RESOLVED" >> $R_SCRATCHDIR/$cue
 		echo "------> resolved as: $(cut -d '|' -f 1 <<< $difference|sed 's/							//g')|$new_cat" | sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' >> $SCRATCHDIR/$log_name
 		;;
 esac
@@ -676,8 +676,10 @@ elif [ "$csv_infile_name" ]; then
 	# now write the db to file
 	add_to_name converted-db-$(date "+%d-%m-%Y%n").dat
 	for part in $(ls $R_SCRATCHDIR); do 
-		echo "$part	$(tr '\n' '	' < $R_SCRATCHDIR/$part)" >> "$output_filename"
+		echo "$part	$(tr '\n' '	' < $R_SCRATCHDIR/$part)" >> $SCRATCHDIR/newdb.csv
 	done
+	# tidy up the format and write to outfile
+	sed -e 's/		/	/g' -e 's/_DOT_/./g' $SCRATCHDIR/newdb.csv > "$output_filename"
 	echo "converted database saved as \"$output_filename\"."
 fi # this is the fi that ends the if dat_infile1 exists
 # tidy up

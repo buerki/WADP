@@ -4,7 +4,7 @@ export PATH="$PATH:/usr/local/bin:/usr/bin:/bin:"$HOME/bin"" # needed for Cygwin
 # WADP.sh (c) 2015 Cardiff University
 # written by Andreas Buerki
 ####
-version="0.5.2"
+version="0.6"
 # DESCRRIPTION: processes word-association data
 ################# defining functions ###############################
 #
@@ -203,6 +203,7 @@ case $task in
 		R|r)	r_task=true
 				echo
 				read -p 'Please enter your rater ID (or leave blank) and press ENTER: ' rater_id
+				export rater_id
 				if [ -z "$rater_id" ]; then
 						rater_id="anonymous"
 				fi

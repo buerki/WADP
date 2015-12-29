@@ -3,7 +3,7 @@
 # reporter.sh (c) 2015 Cardiff Universtiy
 # written by Andreas Buerki
 ####
-version="0.5"
+version="0.6"
 # DESCRRIPTION: creates reports for word-association data
 ################# defining functions ###############################
 
@@ -142,8 +142,10 @@ case $# in
 			# testing format by checking whether there is a 'category' field in
 			# the header
 			if [ -z "$(head -1 "$1" | egrep ',\"*category\"*')" ]; then
-				echo "ERROR: \"$1\" does not appear to be of the correct format. A .csv file with wa-responses and categories needs to be provided."
-				exit 1
+				noncategorised=true
+				echo "noncategorised data detected in $file."
+				echo "producing primary response report..."
+				primary_resp=true
 			fi
 			in_filename="$1"
 		fi
@@ -152,7 +154,7 @@ case $# in
 		exit 1
 		;;
 esac
-if [ "$auxiliary" ]; then
+if [ "$auxiliary" ] || [ $noncategorised ]; then
 	printf "\033c"
 	echo
 	echo
@@ -171,7 +173,9 @@ echo
 echo "          WORD ASSOCIATION DATA REPORTER"
 echo "          version $version"
 fi
-
+if [ $noncategorised ]; then
+	:
+else
 echo 
 echo 
 echo 
@@ -182,33 +186,65 @@ echo
 echo "          Please enter required report type(s) and press ENTER"
 echo "          (I)   individual respose profiles"
 echo "          (C)   cue profiles"
+echo "          (P)   primary responses"
+echo "          (R)   inter-rater agreement"
+echo "          (A)   all of the above"
 # echo "          (S)   stereotypy rating"
-read -p '			' report_types < /dev/tty
+read -p '          ' report_types < /dev/tty
 case $report_types in
 	I|i)	by_respondent=true
 		;;
 	C|c)	by_cue=true
 		;;
-	IC|CI|ic|ci)	by_respondent=true
+	IC|ic)	by_respondent=true
 			by_cue=true
 		;;
+	P|p)	primary_resp=true
+		;;
+	ICP|icp)	by_respondent=true
+			by_cue=true
+			primary_resp=true
+		;;
+	IP|ip)	by_respondent=true
+			primary_resp=true
+		;;
+	CP|cp)	by_cue=true
+			primary_resp=true
+		;;
+	R|r)	inter_rater=true
+		;;
+	ICR|icr)	by_respondent=true
+				by_cue=true
+				inter_rater=true
+		;;
+	A|a)	by_respondent=true
+			by_cue=true
+			primary_resp=true
+			inter_rater=true
+		;;
 	*)		echo "$report_types is not a valid option."
-			read -p 'Please try again ' report_types < /dev/tty
+			read -p 'Please try again, typing only one letter this time' report_types < /dev/tty
 			case $report_types in
-				R|r)	by_respondent=true
+				I|i)	by_respondent=true
 					;;
-				C|r)	by_cue=true
+				C|c)	by_cue=true
 					;;
-				RC|CR|rc|cr)	by_respondent=true
+				P|p)	primary_resp=true
+					;;
+				R|r)	inter_rater=true
+					;;
+				A|a)	by_respondent=true
 						by_cue=true
+						primary_resp=true
+						inter_rater=true
 					;;
 				*)	echo "$report_types is not a valid option. Exiting."
 					exit 1		
 			esac
 esac
 printf "\033c"
-
-################ create two scratch directories
+fi
+################ create three scratch directories
 # first one to keep db sections in
 RSCRATCHDIR=$(mktemp -dt reporterXXX) 
 # if mktemp fails, use a different method to create the SCRATCHDIR
@@ -241,11 +277,28 @@ if [ "$diagnostic" == true ]; then
 		xdg-open $SCRATCHDIR
 	fi
 fi
+# third one to keep more auxiliary and temporary files in
+SCRATCHDIR3=$(mktemp -dt reporterXXX) 
+# if mktemp fails, use a different method to create the SCRATCHDIR
+if [ "$SCRATCHDIR3" == "" ] ; then
+	mkdir ${TMPDIR-/tmp/}reporterXXX.1$$
+	SCRATCHDIR3=${TMPDIR-/tmp/}reporterXXX.1$$
+fi
+if [ "$diagnostic" == true ]; then
+	if [ "$CYGWIN" ]; then
+		cygstart $SCRATCHDIR3
+	elif [ "$DARWIN" ]; then
+		open $SCRATCHDIR3
+	else
+		xdg-open $SCRATCHDIR3
+	fi
+fi
 
 ################ processing in-file #########
 # initialise some variables
 in_rows= # total rows in file
-in_cues= # n/a
+cues= # list of all cues in the file
+no_of_cues= # number of cues
 in_header= # header w/o respondent ID heading
 ID_header= # header for respondent ID column (if present)
 cue= # n/a
@@ -256,6 +309,7 @@ in_wa= # holds in-file
 in_columns= # holds NUMBER of columns in in-file
 rowcount=-1 # set rowcount to -1 so the first line will be first row
 cat_columns= # holds numbers indicating the columns that contain cats
+cue_columns= # holds numbers indicating the columns that contain cues (if header) or responses
 in_categories= # holds the category columns of in-file
 
 # read input file
@@ -322,39 +376,54 @@ else
 	if [ "$diagnostic" ]; then echo "No respondent IDs detected.";sleep 1; fi
 fi
 
-# identify 'category' columns
-for field in $(sed $extended 's/\|/ /g' <<< "$in_header"); do
-	(( field_no += 1 ))
-	if [ "$(egrep '^category$' <<< "$field")" ]; then
-		cat_columns+=" $field_no"
-		if [ "$sw" ]; then
-			echo "ERROR: two consecutive category columns in $in_filename. Please verify and try again"
-			exit 1
+# unless non-categorised, identify 'category' columns
+if [ -z "$noncategorised" ]; then
+	for field in $(sed $extended 's/\|/ /g' <<< "$in_header"); do
+		(( field_no += 1 ))
+		if [ "$(egrep '^category$' <<< "$field")" ]; then
+			cat_columns+=" $field_no"
+			if [ "$sw" ]; then
+				echo "ERROR: two consecutive category columns in $in_filename. Please verify and try again"
+				exit 1
+			fi
+			sw=ON
+		else
+			sw=
 		fi
-		sw=ON
-	else
-		sw=
+	done
+	field_no=
+	field=
+	# verify identified columns are plausible
+	last_cat_column="$(egrep -o '[[:digit:]]+$' <<< "$cat_columns")"
+	if [ "$last_cat_column" -lt $(( $in_columns - 1 )) ]; then
+		# if last category column is not the last or penultimate column of the file	
+		echo "ERROR: the last or penultimate column of $in_filename_only should be a category column."
+		echo "However, the two final colums are: $(egrep -o '\|[^\|]+\|[^\|]+$' <<< "$in_header" | sed $extended -e 's/\|/ /g' -e 's/ /, /2')"
+		echo "Please verify and try again."
+		exit 1
 	fi
-done
-field_no=
-field=
-# verify identified columns are plausible
-last_cat_column="$(egrep -o '[[:digit:]]+$' <<< "$cat_columns")"
-if [ "$last_cat_column" -lt $(( $in_columns - 1 )) ]; then
-	# if last category column is not the last or penultimate column of the file	
-	echo "ERROR: the last or penultimate column of $in_filename_only should be a category column."
-	echo "However, the two final colums are: $(egrep -o '\|[^\|]+\|[^\|]+$' <<< "$in_header" | sed $extended -e 's/\|/ /g' -e 's/ /, /2')"
-	echo "Please verify and try again."
-	exit 1
+	last_cat_column=
+	# pick out category columns
+	in_categories="$(cut -d '|' -f $(sed $extended -e 's/^ //' -e 's/ /,/g' <<< $cat_columns) <<< "$in_wa")"
+	# report
+	if [ "$diagnostic" ]; then 
+		echo "categories are:"
+		echo "$in_categories"
+		read -p 'Press ENTER to continue' a  < /dev/tty
+	fi
+	# derive cue column numbers
+	for num in $cat_columns; do
+		cue_columns+=" $(( $num - 1 ))"
+	done
+else
+	cue_columns=$(eval echo {1..$in_columns})
 fi
-last_cat_column=
-# pick out category columns
-in_categories="$(cut -d '|' -f $(sed $extended -e 's/^ //' -e 's/ /,/g' <<< $cat_columns) <<< "$in_wa")"
-# report
-if [ "$diagnostic" ]; then 
-	echo "categories are:"
-	echo "$in_categories"
-	read -p 'Press ENTER to continue' a  < /dev/tty
+# pick out cues from header
+cues="$(cut -d '|' -f $(sed -e 's/^ //' -e 's/ /,/g' <<< $cue_columns) <<< "$in_header")"
+no_of_cues=$(( $( tr -dc ' ' <<< $cue_columns | wc -c) + 1 ))
+if [ "$diagnostic" ]; then
+	echo "cue columns: $cue_columns"
+	echo "no of cues: $no_of_cues"
 fi
 ########################### assembling by-respondent report ####################
 if [ "$by_respondent" ]; then
@@ -418,20 +487,8 @@ fi
 
 ########################### assembling by-cue report ####################
 if [ "$by_cue" ]; then
-	echo -n "Gathering figures for report of categories by cue..."
-	# derive cue column indices
-	for num in $cat_columns; do
-		cue_columns+=" $(( $num - 1 ))"
-	done
-	# pick out cues from header
-	cues="$(cut -d '|' -f $(sed -e 's/^ //' -e 's/ /,/g' <<< $cue_columns) <<< "$in_header")"
-	no_of_cues=$(( $( tr -dc ' ' <<< $cue_columns | wc -c) + 1 ))
-	if [ "$diagnostic" ]; then
-		echo "cue columns: $cue_columns"
-		echo "no of cues: $no_of_cues"
-	fi
-	echo "."
-	# process by column-by-column to write cat frequencies of every cue to tmp
+	echo "Gathering figures for report of categories by cue..."
+	# process column-by-column to write cat frequencies of every cue to tmp
 	for colu in $(eval echo {1..$no_of_cues}); do
 		cut -d '|' -f $colu <<< "$in_categories" | sed 's/^$/_/g' | sort | uniq -c | sed $extended -e 's/^ +//' -e 's/([[:digit:]]+) (.+)/\2	\1/g' > $SCRATCHDIR/$(cut -d '|' -f $colu <<< $cues)
 	done
@@ -467,11 +524,80 @@ $(sed $extended 's/^\|//g' <<< "$out_row")"
 	out_cat=
 fi
 
-# tidy up
-if [ -z "$diagnostic" ]; then
-	rm -r $RSCRATCHDIR $SCRATCHDIR &
+########################### assembling primary response report ####################
+if [ "$primary_resp" ]; then
+	echo "Gathering figures for primary response report..."
+	#echo "category columns are $cat_columns"
+	#echo "response columns are $cue_columns"
+	# pick out response columns
+	in_responses="$(cut -d '|' -f $(sed $extended -e 's/^ //' -e 's/ /,/g' <<< $cue_columns) <<< "$in_wa")"
+	# process column-by-column to write response frequencies of every cue to tmp
+	for colu in $(eval echo {1..$no_of_cues}); do
+		cut -d '|' -f $colu <<< "$in_responses" | sed 's/^$/_/g' | sort | uniq -c | sed $extended -e 's/^ +//' -e 's/([[:digit:]]+) (.+)/\2	\1/g' | sort -rnk2 | sed 's/	/|/g'> $SCRATCHDIR3/$(cut -d '|' -f $colu <<< $cues)
+	done
+	##### assemble report
+	# assemble header
+	report_out="$(sed -e 's/|/|frequency|/g' -e 's/$/|frequency/g' <<< $cues)"
+	# add the rest
+	report_out+="
+$(paste $(sed -e 's/|/ /g' -e "s?^?$SCRATCHDIR3/?g" -e "s? ? $SCRATCHDIR3/?g" <<<$cues) | sed -e 's/^	/|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/	/|/g' -e 's/_/ /g' -e 's/| |/|no response|/g' -e 's/^ |/no response|/g')"
+#	report_out+="
+#$(paste $SCRATCHDIR3/* | sed -e 's/^	/|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/		/	|	/g' -e 's/	/|/g' -e 's/_/ /g')"
+# write report file
+# create name of report output file
+add_to_name p-report_$in_filename_only
+sed $extended -e 's/^/\"/' -e 's/$/\"/g' -e 's/\|/\",\"/g' <<< "$report_out" > "$output_filename"
+# undo any cygwin damage
+if [ "$CYGWIN" ]; then
+	conv -U "$output_filename" 2>/dev/null
+fi
+echo "Report saved as \"$output_filename\"."
 fi
 
+########################### assembling inter-rater agreement report ####################
+if [ "$inter_rater" ]; then
+	# check if rater IDs are supplied
+	if [ "$(grep '|rated_by' <<< $in_header)" ] ; then
+		:
+	else
+		echo "" >&2
+		echo "ERROR: $in_filename does not contain rater IDs. Only data files with rater IDs can be used to derive inter-rater agreement ratios." >&2
+		exit 1
+	fi
+	echo "Gathering figures for inter-rater agreement report..."
+	# count the number of times the RESOLVED label is added to rater IDs
+	disagreements=$(grep -o ';RESOLVED",*' "$in_filename" | wc -l | sed 's/ //g')
+	# work out how many categories were assigned (= total category slots minus empty slots)
+	total_cats=$(echo $in_categories | sed 's/ /|/g' | grep -o '|' | wc -l); (( total_cats += 1 ))
+	empty=$(echo $in_categories | grep -o '_' | wc -l)
+	(( total_cats -= $empty ))
+	# work out the ratio
+	int_rater_ratio=$(echo "scale=4; 1 - ($disagreements / $total_cats)" | bc)
+	# display report
+	if [ "$by_cue" ] || [ "$by_respondent" ] || [ "$primary_resp" ]; then
+		:
+	else
+		printf "\033c"
+	fi
+	echo "=============================================================="
+	echo "Inter-rater agreement report for $in_filename_only"
+	echo "=============================================================="
+	echo "total ratings in file: $total_cats"
+	echo "ratings marked as having needed resolution: $disagreements"
+	echo "inter-rater agreement ratio: $int_rater_ratio"
+	echo "=============================================================="
+	echo "The accuracy of the report depends on an agreement-marked"
+	echo "database having been used to produce the data file. This will be"
+	echo "the case if the database was created using WADP v. 0.6 or later."
+	echo
+	read -p 'Press ENTER to continue.'
+fi
+# tidy up
+if [ -z "$diagnostic" ]; then
+	rm -r $RSCRATCHDIR $SCRATCHDIR $SCRATCHDIR3 &
+fi
+
+if [ "$by_cue" ] || [ "$by_respondent" ] || [ "$primary_resp" ]; then
 # ask if directory should be opened
 echo ""
 read -p 'Would you like to open the output directory? (Y/n)' a  < /dev/tty
@@ -483,4 +609,5 @@ if [ "$a" == "y" ] || [ "$a" == "Y" ] || [ -z "$a" ]; then
 	else
 		xdg-open .
 	fi
+fi
 fi
