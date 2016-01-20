@@ -3,7 +3,7 @@ export PATH="$PATH:/usr/local/bin:/usr/bin:/bin" # needed for Cygwin
 ##############################################################################
 # installer (c) 2015 Cardiff University, licensed under the EUPL V.1.1.
 # written by Andreas Buerki
-version="0.4"
+version="0.5"
 ####
 ## set installation variables
 export title="WADP"
@@ -43,6 +43,7 @@ do
 	V)	echo "$(basename $(sed 's/ //g' <<<$0))	-	version $version"
 		echo "Copyright (c) 2015 Cardiff University"
 		echo "licensed under the EUPL V.1.1"
+		echo "written by Andreas Buerki"
 		exit 0
 		;;
 	esac
@@ -114,31 +115,31 @@ fi
 ###########
 # setting path
 ###########
-if [ "$pathonly" ]; then
-	if [ "$uninstall" ]; then
-		echo "path needs to be uninstalled manually."
-		exit 0
-	else
-		# set path
-		# from now on, commands are executed from a subshell with -l (login) 
-		# option (needed for Cygwin)
-		bash -lc 'if [ "$(egrep -o "$HOME/bin" <<<$PATH)" ]; then
-			echo "Path already set."
-		elif [ -e ~/.bash_profile ]; then
-			cp "${HOME}/.bash_profile" "${HOME}/.bash_profile.bkup"
-			echo "">> "${HOME}/.bash_profile"
-			echo "export PATH="\${PATH}:\"${HOME}/bin\""">> "${HOME}/.bash_profile"
-			echo "Setting path in ~/.bash_profile"
-			echo "Logout and login may be required before new path takes effect."
-		else
-			cp "${HOME}/.profile" "${HOME}/.profile.bkup"
-			echo "">> "${HOME}/.profile"
-			echo "export PATH="$\{PATH}:${HOME}/bin"">> "${HOME}/.profile"
-			echo "Setting path in ~/.profile"
-			echo "Logout and login may be required before new path takes effect."
-		fi'
-	fi
+if [ "$uninstall" ]; then
+	echo "path needs to be uninstalled manually."
 	exit 0
+else
+	# set path
+	# from now on, commands are executed from a subshell with -l (login) 
+	# option (needed for Cygwin)
+	bash -lc 'if [ "$(egrep -o "$HOME/bin" <<<$PATH)" ]; then
+		echo "Path already set."
+	elif [ -e ~/.bash_profile ]; then
+		cp "${HOME}/.bash_profile" "${HOME}/.bash_profile.bkup"
+		echo "">> "${HOME}/.bash_profile"
+		echo "export PATH="\${PATH}:\"${HOME}/bin\""">> "${HOME}/.bash_profile"
+		echo "Setting path in ~/.bash_profile"
+		echo "Logout and login may be required before new path takes effect."
+	else
+		cp "${HOME}/.profile" "${HOME}/.profile.bkup"
+		echo "">> "${HOME}/.profile"
+		echo "export PATH="$\{PATH}:${HOME}/bin"">> "${HOME}/.profile"
+		echo "Setting path in ~/.profile"
+		echo "Logout and login may be required before new path takes effect."
+	fi'
+	if [ "$pathonly" ]; then
+		exit 0
+	fi
 fi
 ###########
 # removing old installations
