@@ -4,7 +4,7 @@ export PATH="$PATH:/usr/local/bin:/usr/bin:/bin:"$HOME/bin"" # needed for Cygwin
 # WADP.sh (c) 2015 Cardiff University
 # written by Andreas Buerki
 ####
-version="0.6"
+version="0.6.5"
 # DESCRRIPTION: processes word-association data
 ################# defining functions ###############################
 #

@@ -3,7 +3,7 @@
 # administrator.sh (c) 2015 Cardiff University
 # written by Andreas Buerki
 ####
-version="0.6"
+version="0.6.5"
 # DESCRRIPTION: performs administrative functions on wa dbs and data files
 ################# defining functions ###############################
 
@@ -89,39 +89,176 @@ fi
 # define resolution_menu function
 #######################
 resolution_menu () {
+# read any changed keys assignments
+if [ -e $SCRATCHDIR/new_left ]; then
+	new_left="$(cat $SCRATCHDIR/new_left)"
+	new_right="$(cat $SCRATCHDIR/new_right)"
+fi
+# shift variable names for the 'back' function
+previous_cue="$new_cue"; new_cue=
+previous_diff="$new_diff"; new_diff=
+previous_rating="$new_rating"; new_rating=
+previous_destination="$new_destination"; new_destination=
+previous_difference="$new_difference"; new_difference=
+echo "processing cue $cue_progress of $(wc -l <<<"$cues" | sed 's/ //g')."
 echo
 echo 	
 echo
 echo "	cue: $cue"
+new_cue=$cue
 echo
-sed $extended -e 's/</*response missing*/' -e 's/>/*response missing*/' -e 's/		//g' -e 's/\|/ -> /' -e 's/\|/ vs. /' -e 's/\|/ -> /' -e 's/^/	/' <<< "$difference" | sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g'
+new_diff="$(sed $extended -e 's/</*response missing*/' -e 's/>/*response missing*/' -e 's/		//g' -e 's/\|/ -> /' -e 's/\|/ vs. /' -e 's/\|/ -> /' -e 's/^/	/' <<< "$difference" | sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g')"
+echo "$new_diff"
+echo
 # following menu items are conditional so no empty side can be chosen
-if [ -z "$(egrep '>' <<< "$difference")" ]; then echo "	(L)	choose left";fi
-if [ -z "$(egrep '<' <<< "$difference")" ]; then echo "	(R)	choose right";fi
+if [ -z "$(egrep '>' <<< "$difference")" ]; then echo "	("$new_left")	choose left";fi
+if [ -z "$(egrep '<' <<< "$difference")" ]; then echo "	("$new_right")	choose right";fi
 echo "	(N)	input new category assignment"
 echo "	(D)	discard both ratings"
+if [ "$previous_rating" ] || [ "$deleted" ]; then echo "	(B)	go back to previous";fi
+echo "	(X)	exit rating process"
+echo "	(*)	assign new keys to \"choose left\" and \"choose right\""
+echo
 read -p '	' r
+# reset 'deleted' switch
+deleted=
+# check if B was requested and deal with this request first
+if [ "$r" != "b" ] && [ "$r" != "B" ]; then
+	# if 'B' was NOT requested, write any previous assignments to file
+	if [ "$previous_rating" ]; then
+		echo "$previous_rating" >> "$previous_destination"
+		previous_rating=
+		previous_destination=
+	fi
+else
+	printf "\033c"
+	previous_resolution_menu
+	echo
+	echo 	
+	echo
+	echo "	cue: $new_cue"
+	echo
+	echo "$new_diff"
+	echo
+	# following menu items are conditional so no empty side can be chosen
+	if [ -z "$(egrep '>' <<< "$difference")" ]; then echo "	("$new_left")	choose left";fi
+	if [ -z "$(egrep '<' <<< "$difference")" ]; then echo "	("$new_right")	choose right";fi
+	echo "	(N)	input new category assignment"
+	echo "	(D)	discard both ratings"
+	echo "	(X)	exit rating process"
+	echo "	(*)	assign new keys to \"choose left\" and \"choose right\""
+	echo
+	read -p '	' r
+fi
+# if * chosen
+if [ "$r" == "*" ]; then
+	echo "	-> New key assignments are only retained during the current session."
+	read -p '	enter new key for "choose left" here: ' new_left
+	read -p '	enter new key for "choose right" here: ' new_right
+	echo "$new_left" > $SCRATCHDIR/new_left
+	echo "$new_right" > $SCRATCHDIR/new_right
+	if [ -z "$(egrep '>' <<< "$difference")" ]; then echo "	($new_left)	choose left";fi
+	if [ -z "$(egrep '<' <<< "$difference")" ]; then echo "	($new_right)	choose right";fi
+	echo "	(N)	input new category assignment"
+	echo "	(D)	discard both ratings"
+	read -p '	' r
+fi
+# if interruption
+if [ "$r" == "x" ] || [ "$r" == "X" ]; then
+	echo "	If you exit the rating process before it is complete,"
+	echo "	you will get a log with all decisions listed, but you"
+	echo "	will have to enter them again next time to get a"
+	echo "	fully resolved database."
+	echo "	Would you still like to exit? [Y/n]"
+	read -p '	' r
+	if [ "$r" == "n" ] || [ "$r" == "N" ]; then
+		echo "	Enter a new choice:"
+		read -p '	' r		
+	else
+		echo "++++++++++++++++++++++">> $SCRATCHDIR/$log_name
+		echo "Resolution interrupted">> $SCRATCHDIR/$log_name
+		echo "++++++++++++++++++++++">> $SCRATCHDIR/$log_name
+		add_to_name ./$log_name
+		sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' $SCRATCHDIR/$log_name > $output_filename || echo "ERROR: could not find log."
+		echo "	Log file \"$output_filename\" placed in $(pwd)."
+		rm -r $SCRATCHDIR $SCRATCHDIR1 $SCRATCHDIR2 &
+		exit 0
+	fi
+fi
+# if other options
+echo "	your choice: $r"
 case $r in
-	l|L)	echo "$(cut -f 1 <<< $difference);$rater_id;RESOLVED" >> $R_SCRATCHDIR/$cue
-			echo "------> resolved as: $(cut -f 1 <<< $difference)" >> $SCRATCHDIR/$log_name
+	"$new_left")	new_rating="$(cut -f 1 <<< $difference);$rater_id;RESOLVED"
+			new_destination="$R_SCRATCHDIR/$cue"
+			echo "---> resolved as: $(cut -f 1 <<< $difference)" >> $SCRATCHDIR/$log_name
 		;;
-	r|R)	echo "$(cut -d '|' -f 3-4 <<< $difference|sed 's/	//g');$rater_id;RESOLVED" >> $R_SCRATCHDIR/$cue
-			echo "------> resolved as: $(cut -d '|' -f 3-4 <<< $difference|sed 's/	//g')" >> $SCRATCHDIR/$log_name
+	"$new_right")	new_rating="$(cut -d '|' -f 3-4 <<< $difference|sed 's/	//g');$rater_id;RESOLVED"
+			echo "---> resolved as: $(cut -d '|' -f 3-4 <<< $difference|sed 's/	//g')" >> $SCRATCHDIR/$log_name
+			new_destination="$R_SCRATCHDIR/$cue"
 		;;
 	d|D)	echo "	discarding those ratings..."
-			echo "------> deleted" >> $SCRATCHDIR/$log_name
+			deleted=true
+			new_rating=
+			new_destination="$R_SCRATCHDIR/$cue"
+			echo "---> $(cut -d '|' -f 1 <<< $difference|sed 's/							//g') deleted" >> $SCRATCHDIR/$log_name
 		;;
 	*)	read -p '	Enter new category here: ' new_cat
 		new_cat="$(tr '[[:lower:]]' '[[:upper:]]' <<<"$new_cat")"
-		echo "$(cut -d '|' -f 1 <<< $difference|sed 's/							//g')|$new_cat;$rater_id;RESOLVED" >> $R_SCRATCHDIR/$cue
-		echo "------> resolved as: $(cut -d '|' -f 1 <<< $difference|sed 's/							//g')|$new_cat" | sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' >> $SCRATCHDIR/$log_name
+		new_rating="$(cut -d '|' -f 1 <<< $difference|sed 's/							//g')|$new_cat;$rater_id;RESOLVED"
+		new_destination="$R_SCRATCHDIR/$cue"
+		echo "---> resolved as: $(cut -d '|' -f 1 <<< $difference|sed 's/							//g')|$new_cat" | sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' >> $SCRATCHDIR/$log_name
 		;;
 esac
+sleep 0.5
 printf "\033c"
+new_difference="$difference"
+}
+#######################
+# define previous_resolution_menu function
+#######################
+previous_resolution_menu () {
+	echo
+	echo 	
+	echo
+	echo "	cue: $previous_cue"
+	echo
+	echo "$previous_diff"
+	echo
+	echo "	previously rated as: $(cut -d '|' -f 2 <<< $previous_rating | cut -d ';' -f 1)"
+	echo
+	# following menu items are conditional so no empty side can be chosen
+	if [ -z "$(egrep '>' <<< "$new_difference")" ]; then echo "	("$new_left")	choose left";fi
+	if [ -z "$(egrep '<' <<< "$new_difference")" ]; then echo "	("$new_right")	choose right";fi
+	echo "	(N)	input new category assignment"
+	echo "	(D)	discard both ratings"
+	echo
+	read -p '	' r
+	echo "	your choice: $r"
+	case $r in
+		"$new_left")	echo "$(cut -f 1 <<< $previous_difference);$rater_id;RESOLVED" >> $previous_destination
+				echo "-x-x-x-x-x-x-x-x-x-x-> A PREVIOUS RATING WAS CHANGED: $previous_cue - $(cut -f 1 <<< $previous_difference)" >> $SCRATCHDIR/$log_name
+			;;
+		"$new_right")	echo "$(cut -d '|' -f 3-4 <<< $previous_difference|sed 's/	//g');$rater_id;RESOLVED" >> $previous_destination
+				echo "-x-x-x-x-x-x-x-x-x-x-> A PREVIOUS RATING WAS CHANGED: $previous_cue - $(cut -d '|' -f 3-4 <<< $previous_difference|sed 's/	//g')" >> $SCRATCHDIR/$log_name
+			;;
+		d|D)	echo "	discarding those ratings..."
+				previous_rating=
+				echo "-x-x-x-x-x-x-x-x-x-x-> A PREVIOUS RATING WAS CHANGED: $previous_cue - $(cut -d '|' -f 1 <<< $previous_difference|sed 's/							//g') deleted" >> $SCRATCHDIR/$log_name
+			;;
+		*)	read -p '	Enter new category here: ' new_cat
+			new_cat="$(tr '[[:lower:]]' '[[:upper:]]' <<<"$new_cat")"
+			echo "$(cut -d '|' -f 1 <<< $previous_difference|sed 's/							//g')|$new_cat;$rater_id;RESOLVED" >> $previous_destination
+			echo "-x-x-x-x-x-x-x-x-x-x-> A PREVIOUS RATING WAS CHANGED: $previous_cue - $(cut -d '|' -f 1 <<< $previous_difference|sed 's/							//g')|$new_cat" | sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' >> $SCRATCHDIR/$log_name
+			;;
+	esac
+	sleep 0.5
+	printf "\033c"
 }
 ################## end defining functions ########################
 # initialise some variables
 extended="-r"
+new_left="<"
+new_right=">"
 # check what platform we're under
 platform=$(uname -s)
 # and make adjustments accordingly
@@ -450,6 +587,7 @@ if [ "$dat_infile1_name" ]; then
 			echo "now checking $cue"
 			sleep 1
 		fi
+		(( cue_progress += 1 ))
 		# first see if the whole cue (incl. responses & ratings) is entirely
 		# identical (apart from the rater ID which is cut off)
 		allcat1=$(cut -d ';' -f 1 $SCRATCHDIR1/$cue | sed 's/﻿//g' | sort)
@@ -518,7 +656,11 @@ if [ "$dat_infile1_name" ]; then
 		fi
 		# tidy up
 		resp_done=
-	done	
+	done
+	#### write any remaining resolutions out
+	if [ "$new_rating" ]; then
+		echo "$new_rating" >> "$new_destination"
+	fi
 	#### write new db file (this is tab delimited with one cue per line)
 	if [ -z "$list_only" ] && [ "$r_task" ]; then
 		add_to_name resolved-db-$(date "+%d-%m-%Y%n").dat

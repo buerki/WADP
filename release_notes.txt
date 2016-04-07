@@ -1,3 +1,13 @@
+release notes v. 0.6.5
+**********************
+
+administrator module
+- added progress reporting when resolving ratings (now reports progress in terms of cues)
+- added add option to go back to previous when resolving ratings
+- added option to save resolved ratings to log and exit before all ratings are resolved
+- when resolving ratings, made key assignment for 'choose left' and 'choose right'
+  options user-modifiable.
+
 release notes v. 0.6a
 *********************
 
