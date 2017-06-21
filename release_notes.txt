@@ -1,9 +1,16 @@
+release notes v. 0.6.6
+**********************
+
+categoriser module
+- fixed an issue whereby spaces that might have been inserted before or after a response meant that the response was treated differently
+  from the same response without spaces before or after. Any leading or trailing spaces in responses are now removed before processing.
+
 release notes v. 0.6.5
 **********************
 
 administrator module
 - added progress reporting when resolving ratings (now reports progress in terms of cues)
-- added add option to go back to previous when resolving ratings
+- added option to go back to previous when resolving ratings
 - added option to save resolved ratings to log and exit before all ratings are resolved
 - when resolving ratings, made key assignment for 'choose left' and 'choose right'
   options user-modifiable.

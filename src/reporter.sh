@@ -1,9 +1,10 @@
 #!/bin/bash -
 ##############################################################################
-# reporter.sh (c) 2015 Cardiff Universtiy
-# written by Andreas Buerki
+# reporter.sh
+copyright="2015-7 Cardiff Universtiy; written by Andreas Buerki
+- Licensed under the EUPL v. 1.1"
 ####
-version="0.6"
+version="0.6.6"
 # DESCRRIPTION: creates reports for word-association data
 ################# defining functions ###############################
 
@@ -111,7 +112,7 @@ do
 	v)	verbose=true
 		;;
 	V)	echo "$(basename "$0")	-	version $version"
-		echo "(c) 2015 Cardiff University - Licensed under the EUPL v. 1.1"
+		echo "$copyright"
 		exit 0
 		;;
 	esac

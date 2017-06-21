@@ -1,9 +1,9 @@
 #!/bin/bash -
 ##############################################################################
-# categoriser.sh (c) 2015 Cardiff University
-# written by Andreas Buerki
+copyright="categoriser.sh (c) 2015-17 Cardiff University; written by Andreas Buerki
+- Licensed under the EUPL v. 1.1"
 ####
-version="0.6"
+version="0.6.6"
 # DESCRRIPTION: assigns categories to word-association data
 ################ the following section can be adjusted
 # the key used for category assignments
@@ -391,7 +391,7 @@ do
 	v)	verbose=true
 		;;
 	V)	echo "$(basename $0)	-	version $version"
-		echo "(c) 2015 Cardiff University - Licensed under the EUPL v. 1.1"
+		echo "$copyright"
 		exit 0
 		;;
 	esac
@@ -683,12 +683,13 @@ fi
 # tidy up word-association data in input file
 echo -n "analysing $wa_in_filename ... "
 # parse word-association data into variables
+# first remove any spaces at beginnings or ends of responses
 # we need to insert underscores for any spaces in responses
 # and we need to cater for potential empty responses which would
 # show as 2 (or more) consecutive commas
 # it's also better to replace any potentially confusing special characters
 # these things are taken care of as the file is read in
-in_wa="$(sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' -e 's/ /_/g' -e 's/\|_/\|/g' -e 's/_\|/\|/g' -e 's/\|\|/\|_\|/g' -e 's/\|\|/\|_\|/g' -e 's/\;//g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/\(/_LBRACKET_/g' -e 's/\)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/\+/_PLUS_/g' "$wa_in_filename" | tr '\r' '\n')"
+in_wa="$(sed $extended -e 's/ ,/,/g' -e 's/, /,/g' -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' -e 's/ /_/g' -e 's/\|_/\|/g' -e 's/_\|/\|/g' -e 's/\|\|/\|_\|/g' -e 's/\|\|/\|_\|/g' -e 's/\;//g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/\(/_LBRACKET_/g' -e 's/\)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/\+/_PLUS_/g' "$wa_in_filename" | tr '\r' '\n')"
 # check how many rows in file
 in_rows=$(wc -l <<< "$in_wa") 
 # count in_columns

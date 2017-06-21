@@ -1,9 +1,10 @@
 #!/bin/bash -
 ##############################################################################
-# administrator.sh (c) 2015 Cardiff University
-# written by Andreas Buerki
+# administrator.sh
+copyright=" (c)2015-17 Cardiff University; written by Andreas Buerki
+Licensed under the EUPL v. 1.1"
 ####
-version="0.6.5"
+version="0.6.6"
 # DESCRRIPTION: performs administrative functions on wa dbs and data files
 ################# defining functions ###############################
 
@@ -281,7 +282,7 @@ do
 	v)	verbose=true
 		;;
 	V)	echo "$(basename "$0")	-	version $version"
-		echo "(c) 2015 Cardiff University - Licensed under the EUPL v. 1.1"
+		echo "$copyright"
 		exit 0
 		;;
 	p)	list_only=true

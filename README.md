@@ -70,7 +70,7 @@ http://applij.oxfordjournals.org/content/36/1/23.full.pdf+html
 *********
 COPYRIGHT
 
-Copyright 2015, Cardiff University
+Copyright 2015-17, Cardiff University
 Licensed under the EUPL V.1.1. (the European Union Public Licence) which is an open-source licence (see the EUPL.pdf file for the full licence).
 
 The project resides at [http://buerki.github.com/WADP/](http://buerki.github.com/WADP/) and new versions will be posted there. Suggestions and feedback are welcome. To be notified of new releases, go to https://github.com/buerki/WADP, click on the 'Watch' button and sign in.
@@ -79,5 +79,5 @@ The project resides at [http://buerki.github.com/WADP/](http://buerki.github.com
 WARNING
 
 As per article 7 of the EUPL, the WADP is a work in progress, which is continuously improved. It is not a finished work and may therefore contain defects or “bugs” inherent to this type of software development.
-For the above reason, the software is provided under the Licence on an “as is” basis and without warranties of any kind concerning it, including without limitation merchantability, fitness for a particular purpose, absence of defects or errors, accuracy, non-infringement of intellectual property rights other than copyright as stated in Article 6 of this Licence.
+For the above reason, the software is provided under the Licence on an “as is” basis and without warranties of any kind concerning it, including without limitation merchantability, fitness for a particular purpose, absence of defects or errors, accuracy, non-infringement of intellectual property rights other than copyright as stated in Article 6 of the Licence.
 This disclaimer of warranty is an essential part of the Licence and a condition for the grant of any rights to the WADP.

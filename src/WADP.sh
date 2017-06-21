@@ -1,10 +1,11 @@
 #!/bin/bash -
 export PATH="$PATH:/usr/local/bin:/usr/bin:/bin:"$HOME/bin"" # needed for Cygwin
 ##############################################################################
-# WADP.sh (c) 2015 Cardiff University
-# written by Andreas Buerki
+# WADP.sh 
+copyright="(c) 2015 Cardiff University; written by Andreas Buerki
+Licensed under the EUPL v. 1.1"
 ####
-version="0.6.5"
+version="0.6.6"
 # DESCRRIPTION: processes word-association data
 ################# defining functions ###############################
 #
@@ -340,7 +341,7 @@ do
 		exit 0
 		;;
 	V)	echo "$(basename "$0")	-	version $version"
-		echo "(c) 2015 Cardiff University - Licensed under the EUPL v. 1.1"
+		echo "$copyright"
 		exit 0
 		;;
 	esac
