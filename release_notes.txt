@@ -1,3 +1,12 @@
+release notes v. 0.6.7
+**********************
+
+categoriser, administrator and reporter modules
+- fixed and issue which resulted in field parsing errors if Windows line returns were present.
+
+WADP.app
+- converted this to the current Automator format to work with MacOS 10.12.
+
 release notes v. 0.6.6
 **********************
 

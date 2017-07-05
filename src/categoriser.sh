@@ -3,7 +3,7 @@
 copyright="categoriser.sh (c) 2015-17 Cardiff University; written by Andreas Buerki
 - Licensed under the EUPL v. 1.1"
 ####
-version="0.6.6"
+version="0.6.7"
 # DESCRRIPTION: assigns categories to word-association data
 ################ the following section can be adjusted
 # the key used for category assignments
@@ -31,7 +31,18 @@ key='
 allowed_categories='A,CR,CRRC,E,F,I,L,LCR,LRC,OC,OCCR,OCRC,RC,S,SCR,SRC,SS'
 ################# end of user-adjustable section
 ################# defining functions ###############################
-
+#######################
+# define add_windows_returns function
+#######################
+add_windows_returns ( ) {
+sed 's/$//g' "$1"
+}
+#######################
+# define remove_windows_returns function
+#######################
+remove_windows_returns ( ) {
+sed 's///g' "$1"
+}
 #######################
 # define help function
 #######################
@@ -682,6 +693,9 @@ if [ "$(cat $SCRATCHDIR/analyst_id)" ]; then
 fi
 # tidy up word-association data in input file
 echo -n "analysing $wa_in_filename ... "
+# remove any Windows returns
+remove_windows_returns "$wa_in_filename" > "$wa_in_filename.corr"
+mv "$wa_in_filename.corr" "$wa_in_filename"
 # parse word-association data into variables
 # first remove any spaces at beginnings or ends of responses
 # we need to insert underscores for any spaces in responses
@@ -697,7 +711,7 @@ in_columns=$(( 1 + $(head -1 <<< "$in_wa" | tr -dc '|' | wc -c) ))
 # check fields were properly separated: each line should contain the same number of field separators. If that is not the case, throw error and exit
 while read line; do
 	if [ "$(tr -dc '|' <<< $line | wc -c)" -ne "$(( $in_columns - 1 ))" ]; then
-		echo "ERROR: field separation inconsistency. There should be exactly $db_columns fields per line. $(tr -dc '|' <<< $line | wc -c) were detected here:
+		echo "ERROR: field separation inconsistency. There should be exactly $in_columns fields per line. $(tr -dc '|' <<< $line | wc -c) were detected here:
 $line" >&2
 		rm -r $SCRATCHDIR $DBSCRATCHDIR &
 		exit 1

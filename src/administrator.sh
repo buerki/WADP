@@ -4,10 +4,20 @@
 copyright=" (c)2015-17 Cardiff University; written by Andreas Buerki
 Licensed under the EUPL v. 1.1"
 ####
-version="0.6.6"
+version="0.6.7"
 # DESCRRIPTION: performs administrative functions on wa dbs and data files
 ################# defining functions ###############################
-
+# define add_windows_returns function
+#######################
+add_windows_returns ( ) {
+sed 's/$//g' "$1"
+}
+#######################
+# define remove_windows_returns function
+#######################
+remove_windows_returns ( ) {
+sed 's///g' "$1"
+}
 #######################
 # define help function
 #######################
@@ -331,6 +341,8 @@ case $# in
 		;;
 	1)	if [ -s "$1" ]; then
 			t_task=true
+			remove_windows_returns "$1" > "$1.corr"
+			mv "$1.corr" "$1"
 		else
 			echo "ERROR: could not access file $1" >&2
 			exit 1
@@ -344,7 +356,10 @@ case $# in
 		fi
 		;;
 	2)	if [ -s "$1" ] && [ -s "$2" ]; then
-			:
+			remove_windows_returns "$1" > "$1.corr"
+			mv "$1.corr" "$1"
+			remove_windows_returns "$2" > "$2.corr"
+			mv "$2.corr" "$2"
 		else
 			echo "ERROR: could not access file(s) $1 and/or $2" >&2
 			exit 1

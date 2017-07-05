@@ -4,10 +4,21 @@
 copyright="2015-7 Cardiff Universtiy; written by Andreas Buerki
 - Licensed under the EUPL v. 1.1"
 ####
-version="0.6.6"
+version="0.6.7"
 # DESCRRIPTION: creates reports for word-association data
 ################# defining functions ###############################
-
+#######################
+# define add_windows_returns function
+#######################
+add_windows_returns ( ) {
+sed 's/$//g' "$1"
+}
+#######################
+# define remove_windows_returns function
+#######################
+remove_windows_returns ( ) {
+sed 's///g' "$1"
+}
 #######################
 # define help function
 #######################
@@ -121,14 +132,13 @@ shift $((OPTIND -1))
 ################ checks on input files
 # initialise some variables
 in_filename=
-
 if [ $# -gt 1 ]; then
 	echo "Only one file is processed at a time. Processing $1 only." >&2
 fi
-
-# check that input file exists
+# check that input file exists and remove Windows returns
 if [ -s "$1" ]; then
-		:
+		remove_windows_returns "$1" > "$1.corr"
+		mv "$1.corr" "$1"
 else
 	echo "ERROR: could not open $file"
 	exit 1
