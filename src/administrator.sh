@@ -4,13 +4,13 @@
 copyright=" (c)2015-17 Cardiff University; written by Andreas Buerki
 Licensed under the EUPL v. 1.1"
 ####
-version="0.6.9"
+version="0.7"
 # DESCRRIPTION: performs administrative functions on wa dbs and data files
 ################# defining functions ###############################
 # define csv_parser function
 ############################
 csv_parser ( ) {
-sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' $1
+sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' "$1"
 }
 # define add_windows_returns function
 #######################
@@ -127,7 +127,7 @@ echo
 echo "	cue: $cue"
 new_cue=$cue
 echo
-new_diff="$(sed $extended -e 's/</*response missing*/' -e 's/>/*response missing*/' -e 's/		//g' -e 's/\|/ -> /' -e 's/\|/ vs. /' -e 's/\|/ -> /' -e 's/^/	/' <<< "$difference" | sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g')"
+new_diff="$(sed $extended -e 's/</-/' -e 's/>/-/' -e 's/		//g' -e 's/\|/ -> /' -e 's/\|/ vs. /' -e 's/\|/ -> /' -e 's/^/	/' <<< "$difference" | sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g')"
 echo "$new_diff"
 echo
 # following menu items are conditional so no empty side can be chosen
@@ -543,10 +543,10 @@ if [ "$dat_infile1_name" ]; then
 			echo "" | tee -a $SCRATCHDIR/$log_name
 			echo "$WARN The following responses to cue \"$cue\" differ:"|sed 's/^ //g' | tee -a $SCRATCHDIR/$log_name
 			echo
-			echo "$dat_infile1_name			vs.		  $dat_infile2_name" | tee -a $SCRATCHDIR/$log_name
+			echo "$dat_infile1_name			 vs.		        $dat_infile2_name" | tee -a $SCRATCHDIR/$log_name
 			sort <<< "$resp1" | sed '/^$/d' > $SCRATCHDIR/resp1
 			sort <<< "$resp2" | sed '/^$/d' > $SCRATCHDIR/resp2
-			diff -y --suppress-common-lines $SCRATCHDIR/resp[12] | sed $extended -e 's/</*reponse missing*/g' -e 's/	+ *>/*response missing*					/'|sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' -e 's/|//g'| tee -a $SCRATCHDIR/$log_name
+			diff -y --suppress-common-lines $SCRATCHDIR/resp[12] | sed $extended -e 's/</-/g' -e 's/	+ *>/-						/'|sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' -e 's/|//g'| tee -a $SCRATCHDIR/$log_name
 			# copy over responses only found in dat_infile1
 			for single_resp in $(comm -23 $SCRATCHDIR/resp[12]); do
 				# copy it over and remove it

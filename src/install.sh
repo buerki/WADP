@@ -3,7 +3,7 @@ export PATH="$PATH:/usr/local/bin:/usr/bin:/bin" # needed for Cygwin
 ##############################################################################
 # installer (c) 2015 Cardiff University, licensed under the EUPL V.1.1.
 # written by Andreas Buerki
-version="0.5"
+version="0.6"
 ####
 ## set installation variables
 export title="WADP"
@@ -31,14 +31,14 @@ Options:   -u	uninstalls the software
 while getopts dhpuV opt
 do
 	case $opt	in
-	d)	diagnostic=true
+	d)	diagnostic=TRUE
 		;;
 	h)	help
 		exit 0
 		;;
-	u)	uninstall=true
+	u)	uninstall=TRUE
 		;;
-	p)	pathonly=true
+	p)	pathonly=TRUE
 		;;
 	V)	echo "$(basename $(sed 's/ //g' <<<$0))	-	version $version"
 		echo "Copyright (c) 2015 Cardiff University"
@@ -61,23 +61,27 @@ fi
 platform=$(uname -s)
 # and make adjustments accordingly
 if [ "$(grep 'CYGWIN' <<< $platform)" ]; then
-	CYGWIN=true
+	CYGWIN=TRUE
 	bash -lc 'export USERNAME="$USERNAME"'
 	# check if $HOME contains spaces
 	if [ "$(grep ' ' <<<"$HOME")" ]; then
 		echo "WARNING: Your Cygwin installation user name contains one or more spaces." >&2
 	fi
 elif [ "$(grep 'Darwin' <<< $platform)" ];then
-	DARWIN=true
+	DARWIN=TRUE
+elif [ "$(grep 'Linux' <<< $platform)" ]; then
+	LINUX=TRUE
 else
-	LINUX=true
+	# probably some flavour of Linux
+	LINUX=TRUE
 fi
 # ascertain source directory
 export sourcedir="$(dirname "$0")"
-if [ "$(grep '^\.' <<<"$sourcedir")" ]; then
+if [ "$(grep '^\.' <<<"$sourcedir")" ] || [ "$LINUX" ]; then
 	sourcedir="$(pwd)/src"
 fi
 if [ "$diagnostic" ]; then 
+	echo "platform is $platform"
 	echo "sourcedir is $sourcedir"
 	echo "0 is $0"
 	echo "dirname is $(dirname "$0")"
@@ -179,7 +183,7 @@ echo ""
 echo "Installing files to $HOME/bin"
 mkdir -p "$DESTINATION"
 for file in $components; do
-	cp "$sourcedir/$file" "$DESTINATION/" || problem=true
+	cp "$sourcedir/$file" "$DESTINATION/" || problem=TRUE
 	if [ "$problem" ]; then
 		echo "Installation encountered problems. Manual installation may be required." >&2
 		exit 1

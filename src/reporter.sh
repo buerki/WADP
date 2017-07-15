@@ -4,13 +4,13 @@
 copyright="2015-7 Cardiff Universtiy; written by Andreas Buerki
 - Licensed under the EUPL v. 1.1"
 ####
-version="0.6.9"
+version="0.7"
 # DESCRRIPTION: creates reports for word-association data
 ################# defining functions ###############################
 # define csv_parser function
 ############################
 csv_parser ( ) {
-sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' $1
+sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' "$1"
 }
 #######################
 # define add_windows_returns function
@@ -375,6 +375,9 @@ if [ -n "$(cut -d '|' -f 1 <<< "$in_header" | grep 'ID')" ]; then
 	in_with_ID=true
 	# put IDs in variable
 	in_respondentIDs=$(cut -d '|' -f 1 <<< "$in_wa")
+	if [ "$CYGWIN" ]; then
+		in_respondentIDs="$(echo $in_respondentIDs | tr '\n' ' ')"
+	fi
 	# check if there are non-unique respondent IDs
 	if [ "$(sort <<< "$in_respondentIDs" |uniq| wc -l)" -ne "$(wc -l <<< "$in_respondentIDs")" ]; then
 		echo "ERROR: non-unique respondent IDs in $in_filename_only. Please verify and try again, or use file without respondent IDs."
@@ -437,9 +440,14 @@ fi
 # pick out cues from header
 cues="$(cut -d '|' -f $(sed -e 's/^ //' -e 's/ /,/g' <<< $cue_columns) <<< "$in_header")"
 no_of_cues=$(( $( tr -dc ' ' <<< $cue_columns | wc -c) + 1 ))
+# adjust cue count for Cygwin
+if [ "$CYGWIN" ]; then
+	(( no_of_cues -= 1 ))
+fi
 if [ "$diagnostic" ]; then
 	echo "cue columns: $cue_columns"
 	echo "no of cues: $no_of_cues"
+	sleep 1
 fi
 ########################### assembling by-respondent report ####################
 if [ "$by_respondent" ]; then
@@ -458,7 +466,7 @@ if [ "$by_respondent" ]; then
 	fi
 	done
 	# assemble overall list of categories
-	extant_cats=$(cut -f 1 $RSCRATCHDIR/* | sort | uniq)
+	extant_cats=$(cut -f 1 $RSCRATCHDIR/* | sort | uniq | tr '\n' ' ')
 	if [ "$diagnostic" ]; then echo "categories are $extant_cats";fi
 	echo "."
 	##### assemble report
@@ -500,7 +508,6 @@ $(sed $extended 's/^\|//g' <<< "$out_row")"
 	out_row=
 	out_cat=
 fi
-
 ########################### assembling by-cue report ####################
 if [ "$by_cue" ]; then
 	echo "Gathering figures for report of categories by cue..."
@@ -509,12 +516,13 @@ if [ "$by_cue" ]; then
 		cut -d '|' -f $colu <<< "$in_categories" | sed 's/^$/_/g' | sort | uniq -c | sed $extended -e 's/^ +//' -e 's/([[:digit:]]+) (.+)/\2	\1/g' > $SCRATCHDIR/$(cut -d '|' -f $colu <<< $cues)
 	done
 	# assemble overall list of categories
-	extant_cats=$(cut -f 1 $SCRATCHDIR/* | sort | uniq)
+	extant_cats=$(cut -f 1 $SCRATCHDIR/* | sort | uniq |tr '\n' ' ')
 	#echo "categories are $extant_cats"
 	##### assemble report
 	# assemble header
 	report_out="cues|$(sed 's/ /|/g' <<< $extant_cats| sed 's/_/no response/g')"
 	# assemble rows
+#	cues="$(tr '\n' ' ' <<<$cues)"
 	for row in $(eval echo {1..$no_of_cues}); do
 		current_cue=$(cut -d '|' -f $row <<< $cues)
 		out_row=$current_cue

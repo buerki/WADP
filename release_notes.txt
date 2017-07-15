@@ -1,3 +1,15 @@
+release notes v. 0.7
+********************
+
+reporter module
+- made adjustments to run better under Cygwin
+
+installer.sh
+- made adjustments to run better under Linux
+
+added Ubuntu installer launcher and tested under Ubuntu 16.04
+
+
 release notes v. 0.6.9
 **********************
 

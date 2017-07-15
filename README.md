@@ -30,7 +30,7 @@ tested under OS X, Xubuntu Linux, and via Cygwin on Windows 7 and 8 and should w
 *******
 COMPATIBLE SYSTEMS
 
-The WADP was tested on OS X (v. 10.8 10.9 and 10.10), Xubuntu (v. 14.04) and Cygwin (v. 1.8) under Windows 7 and 8. It should run on all platforms on which a bash shell is installed, which includes Windows with the [Cygwin](cygwin.com) package installed.[^1]
+The WADP was tested on OS X (v. 10.12), Xubuntu (v. 14.04), Ubuntu (v. 16.04) and Cygwin under Windows 10. It should run on all platforms on which a bash shell is installed, which includes Windows with the [Cygwin](cygwin.com) package installed.[^1]
 [^1]: The supplied WADP-installer and double-clickable launcher assume that Cygwin is installed in `C:\cygwin` which is the default location. For more information regarding Cygwin requirements, see the WADP manual.
 
 *******
@@ -38,8 +38,8 @@ INSTALLATION
 
 Using the supplied installers:
 
-For OS X, Xubuntu and Cygwin, installers are provided. Inside the WADP directory, double-click on `Xubuntu_installer` (for Xubuntu), `OSX_installer` (OS X) or `Cygwin_installer`/`Cygwin64_installer` (for Cygwin regular and 64-bit installations).[^3]
-[^3]: If the double-clickable installers fail to run, open a terminal window and run the `install.sh` instead.
+For OS X, Ubuntu, Xubuntu and Cygwin, installers are provided. Move the WADP folder onto the Desktop of your computer. Inside the WADP directory, double-click on `Ubuntu_Installer` (for Ubuntu), `Xubuntu_installer` (for Xubuntu), `OSX_installer` (OS X) or `Cygwin_installer`/`Cygwin64_installer` (for Cygwin regular and 64-bit installations).[^3]
+[^3]: If the double-clickable installers fail to run (or when installing on other Linux/UNIX systems), open a terminal window and run the `install.sh` (inside the `src` folder) instead.
 These installers replace previous versions of the installed files. It may be necessary to log out and log in again before the installation takes effect. It should now be possible to launch the WADP by double-clicking on the yellow WADP icon placed on the desktop in in the WADP directory. For further details, see the included manual.
 
 *******

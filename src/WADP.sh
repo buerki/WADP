@@ -5,7 +5,7 @@ export PATH="$PATH:/usr/local/bin:/usr/bin:/bin:"$HOME/bin"" # needed for Cygwin
 copyright="(c) 2015 Cardiff University; written by Andreas Buerki
 Licensed under the EUPL v. 1.1"
 ####
-version="0.6.9"
+version="0.7"
 # DESCRRIPTION: processes word-association data
 ################# defining functions ###############################
 #

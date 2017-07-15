@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Installer Ubuntu
+Exec=src/installer.sh
+Terminal=true
+StartupNotify=false
