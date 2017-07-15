@@ -1,3 +1,19 @@
+release notes v. 0.6.9
+**********************
+
+all modules
+- Windows carriage returns are deleted; these caused occasional errors.
+
+categoriser module
+- added warning message when 'B' is given as categorisation while the 'back' function is unavailable
+
+administrator module
+- with -t option, empty categorisations are no longer converted into database entries
+
+WADP.sh
+- changed order in which the options for the reporter module are presented; now first the options
+  are presented and then the file file is requested
+
 release notes v. 0.6.7
 **********************
 

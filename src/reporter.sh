@@ -4,9 +4,14 @@
 copyright="2015-7 Cardiff Universtiy; written by Andreas Buerki
 - Licensed under the EUPL v. 1.1"
 ####
-version="0.6.7"
+version="0.6.9"
 # DESCRRIPTION: creates reports for word-association data
 ################# defining functions ###############################
+# define csv_parser function
+############################
+csv_parser ( ) {
+sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' $1
+}
 #######################
 # define add_windows_returns function
 #######################
@@ -184,7 +189,7 @@ echo
 echo "          WORD ASSOCIATION DATA REPORTER"
 echo "          version $version"
 fi
-if [ $noncategorised ]; then
+if [ $noncategorised ] || [ "$auxiliary" ]; then
 	:
 else
 echo 
@@ -338,7 +343,7 @@ fi
 # show as 2 (or more) consecutive commas
 # it's also better to replace any potentially confusing special characters
 # these things are taken care of as the file is read in
-in_wa="$(sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' -e 's/ /_/g' -e 's/\|\|/\|_\|/g' -e 's/\|\|/\|_\|/g' -e 's/\;//g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/\(/_LBRACKET_/g' -e 's/\)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/\+/_PLUS_/g' "$in_filename" | tr '\r' '\n')"
+in_wa="$(csv_parser "$in_filename" | sed $extended -e 's/ /_/g' -e 's/\|\|/\|_\|/g' -e 's/\|\|/\|_\|/g' -e 's/\;//g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/\(/_LBRACKET_/g' -e 's/\)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/\+/_PLUS_/g' | tr '\r' '\n')"
 echo -n '.'
 # diagnostics
 if [ "$diagnostic" ]; then

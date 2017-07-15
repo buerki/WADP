@@ -4,9 +4,14 @@
 copyright=" (c)2015-17 Cardiff University; written by Andreas Buerki
 Licensed under the EUPL v. 1.1"
 ####
-version="0.6.7"
+version="0.6.9"
 # DESCRRIPTION: performs administrative functions on wa dbs and data files
 ################# defining functions ###############################
+# define csv_parser function
+############################
+csv_parser ( ) {
+sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' $1
+}
 # define add_windows_returns function
 #######################
 add_windows_returns ( ) {
@@ -28,6 +33,10 @@ DESCRRIPTION: $(basename "$0") performs administrative functions on .dat files
 SYNOPSIS:     $(basename "$0") (DB.dat DB.dat | rated_list.csv)
 
 OPTIONS:      -a run in auxiliary script mode
+              -p produce list of differences between two database files
+              -r resolve differences between two database files
+              -c combine two database files into one database file
+              -t turn rated csv file into a database
               -h show this help message
               -V show copyright and licensing information
 "
@@ -295,7 +304,7 @@ do
 		echo "$copyright"
 		exit 0
 		;;
-	p)	list_only=true
+	p)	p_task=true
 		;;
 	r)	r_task=true
 		;;
@@ -422,7 +431,7 @@ if [ "$dat_infile1_name" ]; then
 		echo "          (T)    turn rated csv file into a database"
 		read -p '          ' task
 		case $task in
-				P|p)	list_only=true
+				P|p)	p_task=true
 					;;
 				R|r)	r_task=true
 					;;
@@ -433,7 +442,7 @@ if [ "$dat_infile1_name" ]; then
 				*)		echo "ERROR: $task is not a valid choice" >&2
 						exit 1
 		esac
-		if [ "$r_task" ] && [ -z "$list_only" ]; then
+		if [ "$r_task" ] && [ -z "$p_task" ]; then
 			echo
 			read -p 'Please enter your rater ID (or leave blank) and press ENTER: ' rater_id
 			if [ -z "$rater_id" ]; then
@@ -441,8 +450,8 @@ if [ "$dat_infile1_name" ]; then
 			fi
 		fi
 	fi
-	# if list_only is active, also activate r-task
-	if [ "$list_only" ]; then
+	# if p_task is active, also activate r-task
+	if [ "$p_task" ]; then
 		r_task=true
 	fi
 ################# processing dat files ###################
@@ -459,7 +468,7 @@ if [ "$dat_infile1_name" ]; then
 		echo "$(cut -f 2- <<< "$line" | tr '	' '\n' | sort | sed -e 's/\?/QQUUEESSTTIIOONNMMAARRKK/g' -e 's/\^/CCIIRRCCUUMMFFLLEEXX/g' -e 's/#/HHAASSHHTTAAGG/g' -e 's/\!/EEXXCCLLAAMM/g')" > $SCRATCHDIR2/$file
 	done < "$dat_infile2"
 	##### begin log file (this is relative to task, so 3 different ways)
-	if [ "$list_only" ]; then
+	if [ "$p_task" ]; then
 		date > $SCRATCHDIR/$log_name
 		echo "Differences $dat_infile1_name vs. $dat_infile2_name" >> $SCRATCHDIR/$log_name
 		echo "-------------------------------------------------------------------------">> $SCRATCHDIR/$log_name
@@ -473,7 +482,7 @@ if [ "$dat_infile1_name" ]; then
 		echo "# Combination of $dat_infile1_name & $dat_infile2_name" >> $SCRATCHDIR/$log_name
 	fi
 	# set WARNING relative to task
-	if [ -z "$list_only" ] && [ "$r_task" ]; then
+	if [ -z "$p_task" ] && [ "$r_task" ]; then
 		WARN="WARNING:"
 	fi
 	##################### comparing cues
@@ -493,16 +502,16 @@ if [ "$dat_infile1_name" ]; then
 		# move cues only found in dat_infile1 to results
 		for single_cue in $(comm -23 $SCRATCHDIR/cues[12]); do
 			mv $SCRATCHDIR1/$single_cue $R_SCRATCHDIR
-			if [ -z "$list_only" ]; then echo "Responses and ratings for cue \"$single_cue\" will be copied to resolved list."
+			if [ -z "$p_task" ]; then echo "Responses and ratings for cue \"$single_cue\" will be copied to resolved list."
 			fi
 		done
 		# move cues only found in dat_infile2 to results
 		for single_cue in $(comm -13 $SCRATCHDIR/cues[12]); do
 			mv $SCRATCHDIR2/$single_cue $R_SCRATCHDIR
-			if [ -z "$list_only" ]; then echo "Responses and ratings for cue \"$single_cue\" will be copied to resolved list."
+			if [ -z "$p_task" ]; then echo "Responses and ratings for cue \"$single_cue\" will be copied to resolved list."
 			fi
 		done
-		if [ -z "$list_only" ] && [ "$r_task" ]; then 
+		if [ -z "$p_task" ] && [ "$r_task" ]; then 
 			read -p 'Continue? (Y/n)' r
 			if [ "$r" == "n" ] || [ "$r" == "N" ]; then
 				rm -r $SCRATCHDIR $SCRATCHDIR1 $SCRATCHDIR2 $R_SCRATCHDIR &
@@ -537,14 +546,14 @@ if [ "$dat_infile1_name" ]; then
 			echo "$dat_infile1_name			vs.		  $dat_infile2_name" | tee -a $SCRATCHDIR/$log_name
 			sort <<< "$resp1" | sed '/^$/d' > $SCRATCHDIR/resp1
 			sort <<< "$resp2" | sed '/^$/d' > $SCRATCHDIR/resp2
-			diff -y --suppress-common-lines $SCRATCHDIR/resp[12] | sed $extended -e 's/</*reponse missing*/g' -e 's/	+ *>/*response missing*					/'|sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g'| tee -a $SCRATCHDIR/$log_name
+			diff -y --suppress-common-lines $SCRATCHDIR/resp[12] | sed $extended -e 's/</*reponse missing*/g' -e 's/	+ *>/*response missing*					/'|sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' -e 's/|//g'| tee -a $SCRATCHDIR/$log_name
 			# copy over responses only found in dat_infile1
 			for single_resp in $(comm -23 $SCRATCHDIR/resp[12]); do
 				# copy it over and remove it
 				egrep "^$single_resp\|" $SCRATCHDIR1/$cue >> $R_SCRATCHDIR/$cue
 				egrep -v "^$single_resp\|" $SCRATCHDIR1/$cue >$SCRATCHDIR1/$cue.
 				mv $SCRATCHDIR1/$cue. $SCRATCHDIR1/$cue
-				if [ -z "$list_only" ] && [ "$r_task" ]; then echo "Ratings for response \"$single_resp\" will be copied to resolved list."
+				if [ -z "$p_task" ] && [ "$r_task" ]; then echo "Ratings for response \"$single_resp\" will be copied to resolved list."
 				fi
 			done
 			# move over responses only found in dat_infile2
@@ -553,10 +562,10 @@ if [ "$dat_infile1_name" ]; then
 				egrep "^$single_resp\|" $SCRATCHDIR2/$cue >> $R_SCRATCHDIR/$cue
 				egrep -v "^$single_resp\|" $SCRATCHDIR2/$cue >$SCRATCHDIR2/$cue.
 				mv $SCRATCHDIR2/$cue. $SCRATCHDIR2/$cue
-				if [ -z "$list_only" ] && [ "$r_task" ]; then echo "Ratings for response \"$single_resp\" will be copied to resolved list."
+				if [ -z "$p_task" ] && [ "$r_task" ]; then echo "Ratings for response \"$single_resp\" will be copied to resolved list."
 				fi
 			done
-			if [ -z "$list_only" ] && [ "$r_task" ]; then
+			if [ -z "$p_task" ] && [ "$r_task" ]; then
 				echo
 				read -p 'Continue? (Y/n)' r
 				if [ "$r" == "n" ] || [ "$r" == "N" ]; then
@@ -574,11 +583,19 @@ if [ "$dat_infile1_name" ]; then
 		if [ "$resp1" != "$resp2" ]; then
 			echo "ERROR in processing encountered: the following responses should be common to both .dat files but are not" | tee -a $SCRATCHDIR/$log_name
 			diff -y --suppress-common-lines $SCRATCHDIR/resp[12] |sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g'| tee -a $SCRATCHDIR/$log_name
-			echo "cannot continue."
-			if [ -z "$diagnostic" ]; then
-				rm -r $SCRATCHDIR $SCRATCHDIR1 $SCRATCHDIR2 $R_SCRATCHDIR &
+			echo "You should not continue without investigating this inconsistency."
+			echo "Press any key to exit the current task, or press 'c' to continue regardless."
+			read -p '	' r
+			if [ "$r" == "c" ]; then
+				:
+			elif [ "$r" == "C" ]; then
+				:
+			else
+				if [ -z "$diagnostic" ]; then
+					rm -r $SCRATCHDIR $SCRATCHDIR1 $SCRATCHDIR2 $R_SCRATCHDIR &
+				fi
+				exit 1
 			fi
-			exit 1
 		fi
 	done
 	##################### comparing ratings
@@ -586,7 +603,7 @@ if [ "$dat_infile1_name" ]; then
 	# in both files (i.e. are not shared), now we look at ratings (ie.categories
 	# that may be identical or differ between the shared cues&responses
 	printf "\033c"
-	if [ -z "$list_only" ] && [ "$r_task" ]; then
+	if [ -z "$p_task" ] && [ "$r_task" ]; then
 		echo
 		echo
 		echo
@@ -614,7 +631,7 @@ if [ "$dat_infile1_name" ]; then
 			read -p 'Press ENTER to continue' a  < /dev/tty
 		fi
 		if [ "$allcat1" == "$allcat2" ]; then
-			if [ -z "$list_only" ]; then
+			if [ -z "$p_task" ]; then
 				# write cue to R_SCRATCHDIR and delete
 				cat $SCRATCHDIR1/$cue >> $R_SCRATCHDIR/$cue
 				rm $SCRATCHDIR1/$cue $SCRATCHDIR2/$cue
@@ -657,7 +674,7 @@ if [ "$dat_infile1_name" ]; then
 				# convert diffs for log output and write to log
 				sed $extended -e 's/		//g' -e 's/\|/vs./2' -e 's/	[[:upper:]]+_*[[:upper:]]*\|/	/g' -e 's/\|/	/g' -e 's/ +/	/g' -e 's/		/	/g' <<< "$diffs" |sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' >> $SCRATCHDIR/$log_name
 				# now write resolved/combined ratings to results
-				if [ -z "$list_only" ] && [ "$r_task" ]; then
+				if [ -z "$p_task" ] && [ "$r_task" ]; then
 					printf "\033c"
 					old_IFS=$IFS  # save the field separator           
 					IFS=$'\n'     # new field separator, the end of line  
@@ -678,7 +695,7 @@ if [ "$dat_infile1_name" ]; then
 		echo "$new_rating" >> "$new_destination"
 	fi
 	#### write new db file (this is tab delimited with one cue per line)
-	if [ -z "$list_only" ] && [ "$r_task" ]; then
+	if [ -z "$p_task" ] && [ "$r_task" ]; then
 		add_to_name resolved-db-$(date "+%d-%m-%Y%n").dat
 		for part in $(ls $R_SCRATCHDIR); do 
 			echo "$part	$(tr '\n' '	' < $R_SCRATCHDIR/$part)" | sed '/^$/d'>> $SCRATCHDIR/$output_filename
@@ -695,7 +712,7 @@ if [ "$dat_infile1_name" ]; then
 			sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' $SCRATCHDIR/$log_name > $log_name || echo "ERROR: could not find log."
 			echo "Log file \"$log_name\" placed in $(pwd)."
 		fi
-	elif [ "$list_only" ]; then
+	elif [ "$p_task" ]; then
 		printf "\033c"
 		sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' $SCRATCHDIR/$log_name
 		echo 
@@ -751,8 +768,8 @@ elif [ "$csv_infile_name" ]; then
 	# - eliminate potential trouble characters
 	# - replace spaces w/ underscore and ^M with \n and ',' with '|'
 	# - copy file to SCRATCHDIR
-	sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' "$csv_infile_name" |\
-	sed -e 's/ /_/g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/(/_LBRACKET_/g' -e 's/)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/+/_PLUS_/g' | tr '\r' '\n' > $SCRATCHDIR/db.csv
+	csv_parser "$csv_infile" |\
+	sed $extended -e 's/ /_/g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/\(/_LBRACKET_/g' -e 's/\)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/\+/_PLUS_/g' | tr '\r' '\n' > $SCRATCHDIR/db.csv
 	# checking if respondent ID is included 
 	if [ -n "$(head -1 $SCRATCHDIR/db.csv | cut -d '|' -f 1 | grep 'ID')" ]; then
 		db_with_ID=true
@@ -836,8 +853,9 @@ elif [ "$csv_infile_name" ]; then
 	for part in $(ls $R_SCRATCHDIR); do 
 		echo "$part	$(tr '\n' '	' < $R_SCRATCHDIR/$part)" >> $SCRATCHDIR/newdb.csv
 	done
-	# tidy up the format and write to outfile
-	sed -e 's/		/	/g' -e 's/_DOT_/./g' $SCRATCHDIR/newdb.csv > "$output_filename"
+	# tidy up the format, exclude responses with empty categorisation, and write to outfile
+	sed -e 's/		/	/g' -e 's/_DOT_/./g' $SCRATCHDIR/newdb.csv | \
+		sed $extended 's/	[[:upper:]]+\|;[[:lower:]]*//g'> "$output_filename"
 	echo "converted database saved as \"$output_filename\"."
 fi # this is the fi that ends the if dat_infile1 exists
 # tidy up
@@ -849,7 +867,7 @@ if [ "$do_not_ask" ]; then
 else
 	# ask if directory should be opened
 	echo ""
-	read -p 'Would you like to open the output directory? (Y/n)' a  < /dev/tty
+	read -p 'Would you like to open the output directory? (Y/n)' a
 	if [ "$a" == "y" ] || [ "$a" == "Y" ] || [ -z "$a" ]; then
 		if [ "$(grep 'CYGWIN' <<< $platform)" ]; then
 			cygstart .

@@ -5,7 +5,7 @@ export PATH="$PATH:/usr/local/bin:/usr/bin:/bin:"$HOME/bin"" # needed for Cygwin
 copyright="(c) 2015 Cardiff University; written by Andreas Buerki
 Licensed under the EUPL v. 1.1"
 ####
-version="0.6.6"
+version="0.6.9"
 # DESCRRIPTION: processes word-association data
 ################# defining functions ###############################
 #
@@ -50,16 +50,20 @@ read -p '           ' module  < /dev/tty
 case $module in
 C|c)	echo "loading categoriser module ..."
 	run_categoriser
+	read -p 'Press ENTER to return to the main menu.' resp
 	;;
 R|r)	echo "loading reporter module ..."
 	run_reporter
+	read -p 'Press ENTER to return to the main menu.' resp
 	;;
 A|a)	echo "loading administrator module ..."
 	run_administrator
+	read -p 'Press ENTER to return to the main menu.' resp
 	;;
 X|x)	echo "This window can now be closed"; exit 0
 	;;
 *)	echo "$module is not a valid choice."
+	sleep 1
 	return
 	;;
 esac
@@ -155,6 +159,73 @@ fi
 #######################
 run_reporter ( ) {
 printf "\033c"
+echo 
+echo 
+echo 
+echo 
+echo 
+echo 
+echo 
+echo "          Please enter required report type(s) and press ENTER"
+echo "          (I)   individual respose profiles"
+echo "          (C)   cue profiles"
+echo "          (P)   primary responses"
+echo "          (R)   inter-rater agreement"
+echo "          (A)   all of the above"
+# echo "          (S)   stereotypy rating"
+read -p '          ' report_types < /dev/tty
+case $report_types in
+	I|i)	export by_respondent=true
+		;;
+	C|c)	export by_cue=true
+		;;
+	IC|ic)	export by_respondent=true
+			export by_cue=true
+		;;
+	P|p)	export primary_resp=true
+		;;
+	ICP|icp)	export by_respondent=true
+			export by_cue=true
+			export primary_resp=true
+		;;
+	IP|ip)	export by_respondent=true
+			export primary_resp=true
+		;;
+	CP|cp)	export by_cue=true
+			export primary_resp=true
+		;;
+	R|r)	export inter_rater=true
+		;;
+	ICR|icr)	export by_respondent=true
+				export by_cue=true
+				export inter_rater=true
+		;;
+	A|a)	export by_respondent=true
+			export by_cue=true
+			export primary_resp=true
+			export inter_rater=true
+		;;
+	*)		echo "$report_types is not a valid option."
+			read -p 'Please try again, typing only one letter this time' report_types < /dev/tty
+			case $report_types in
+				I|i)	export by_respondent=true
+					;;
+				C|c)	export by_cue=true
+					;;
+				P|p)	export primary_resp=true
+					;;
+				R|r)	export inter_rater=true
+					;;
+				A|a)	export by_respondent=true
+						export by_cue=true
+						export primary_resp=true
+						export inter_rater=true
+					;;
+				*)	echo "$report_types is not a valid option. Exiting."
+					exit 1		
+			esac
+esac
+printf "\033c"
 echo
 echo
 echo
@@ -181,6 +252,11 @@ if [ "$diagnostic" ]; then
 	read -p 'press ENTER to continue ' xxx < /dev/tt
 fi
 "$HOME/bin/reporter.sh" -a "$infile"
+# reset option variables
+export by_respondent=
+export by_cue=
+export primary_resp=
+export inter_rater=
 }
 #######################
 # define run_administrator function
@@ -352,11 +428,9 @@ printf "\033c"
 echo "Word Association Data Processor - (c) 2015 Cardiff University - licensed under the EUPL v.1.1."
 printf "\033c"
 splash
-sleep 5
 until [ "$module" == "X" ]; do
 	printf "\033c"
 	splash
-	sleep 5
 done
 ################ create two scratch directories
 # first one to keep db sections in

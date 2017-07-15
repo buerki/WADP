@@ -3,7 +3,7 @@
 copyright="categoriser.sh (c) 2015-17 Cardiff University; written by Andreas Buerki
 - Licensed under the EUPL v. 1.1"
 ####
-version="0.6.7"
+version="0.6.9"
 # DESCRRIPTION: assigns categories to word-association data
 ################ the following section can be adjusted
 # the key used for category assignments
@@ -31,6 +31,11 @@ key='
 allowed_categories='A,CR,CRRC,E,F,I,L,LCR,LRC,OC,OCCR,OCRC,RC,S,SCR,SRC,SS'
 ################# end of user-adjustable section
 ################# defining functions ###############################
+# define csv_parser function
+############################
+csv_parser ( ) {
+sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' $1
+}
 #######################
 # define add_windows_returns function
 #######################
@@ -446,7 +451,9 @@ case $# in
 		exit 1
 		;;
 	1)	if [ -s "$1" ]; then
-			:
+			# remove any Windows returns
+			remove_windows_returns "$1" > "$1.corr"
+			mv "$1.corr" "$1"
 		else
 			echo "ERROR: could not open $1" >&2
 			exit 1
@@ -473,7 +480,11 @@ case $# in
 		fi
 		;;
 	2)	if [ -s "$1" ] && [ -s "$2" ]; then
-			:
+			# remove any Windows returns
+			remove_windows_returns "$1" > "$1.corr"
+			mv "$1.corr" "$1"
+			remove_windows_returns "$2" > "$2.corr"
+			mv "$2.corr" "$2"
 		else
 			echo "ERROR: could not access file(s) $1 and/or $2" >&2
 			exit 1
@@ -610,8 +621,8 @@ elif [ -z "$no_db" ]; then
 # - eliminate potential trouble characters
 # - replace spaces w/ underscore and ^M with \n and ',' with '|'
 # - copy file to SCRATCHDIR
-sed $extended -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' "$db_filename" |\
-sed -e 's/ /_/g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/(/_LBRACKET_/g' -e 's/)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/+/_PLUS_/g' | tr '\r' '\n' > $SCRATCHDIR/db.csv
+csv_parser "$db_filename" |\
+sed $extended -e 's/ /_/g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/(/_LBRACKET_/g' -e 's/)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/+/_PLUS_/g' | tr '\r' '\n' > $SCRATCHDIR/db.csv
 # checking if respondent ID is included 
 if [ -n "$(head -1 $SCRATCHDIR/db.csv | cut -d '|' -f 1 | grep 'ID')" ]; then
 	db_with_ID=true
@@ -693,9 +704,6 @@ if [ "$(cat $SCRATCHDIR/analyst_id)" ]; then
 fi
 # tidy up word-association data in input file
 echo -n "analysing $wa_in_filename ... "
-# remove any Windows returns
-remove_windows_returns "$wa_in_filename" > "$wa_in_filename.corr"
-mv "$wa_in_filename.corr" "$wa_in_filename"
 # parse word-association data into variables
 # first remove any spaces at beginnings or ends of responses
 # we need to insert underscores for any spaces in responses
@@ -703,7 +711,8 @@ mv "$wa_in_filename.corr" "$wa_in_filename"
 # show as 2 (or more) consecutive commas
 # it's also better to replace any potentially confusing special characters
 # these things are taken care of as the file is read in
-in_wa="$(sed $extended -e 's/ ,/,/g' -e 's/, /,/g' -e 's/\|/PIPE/g' -e 's/\"\"//g' -e 's/(([^\",]+)|(\"[^\"]+\")|(\"\")|(\"[^\"]+\"\"[^"]+\"\"[^\"]+\")+)/\1\|/g' -e 's/\|$//g' -e 's/\|,/\|/g' -e 's/,,/\|\|/g' -e 's/\|,/\|\|/g' -e 's/^,/\|/g' -e 's/\"//g' -e 's/ /_/g' -e 's/\|_/\|/g' -e 's/_\|/\|/g' -e 's/\|\|/\|_\|/g' -e 's/\|\|/\|_\|/g' -e 's/\;//g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/\(/_LBRACKET_/g' -e 's/\)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/\+/_PLUS_/g' "$wa_in_filename" | tr '\r' '\n')"
+
+in_wa="$(csv_parser "$wa_in_filename" | sed $extended -e 's/ ,/,/g' -e 's/, /,/g' -e 's/ /_/g' -e 's/\|_/\|/g' -e 's/_\|/\|/g' -e 's/\|\|/\|_\|/g' -e 's/\|\|/\|_\|/g' -e 's/\;//g' -e 's/\-/–/g' -e 's/\./_DOT_/g' -e 's=/=_SLASH_=g' -e "s/'/_APOSTROPHE_/g" -e 's/\`//g' -e 's/\[/_LBRACKET_/g' -e 's/\(/_LBRACKET_/g' -e 's/\)/_RBRACKET_/g' -e 's/\]/_RBRACKET_/g' -e 's/\*/_ASTERISK_/g' -e 's/\+/_PLUS_/g' | tr '\r' '\n')"
 # check how many rows in file
 in_rows=$(wc -l <<< "$in_wa") 
 # count in_columns
@@ -733,7 +742,11 @@ if [ -n "$(head -1 <<< "$in_wa" | cut -d '|' -f 1 | grep 'ID')" ]; then
 fi
 # estimate number of responses to be rated
 est_n_responses=$(( ($in_rows -1 ) * $in_columns ))
-echo "An estimated $est_n_responses to be rated.";sleep 3
+echo "An estimated $est_n_responses to be rated."
+if [ "$db_is_dat" ]; then 
+	echo "A portion of these ratings is likely to be read directly from the database provided."
+fi
+sleep 3
 # process line-by-line
 for line in $in_wa; do
 	#echo "this is line: $line"
@@ -774,26 +787,36 @@ for line in $in_wa; do
 			if [ "$manual" ]; then
 				# present standard menu
 				standard_menu
-				if [ "$category" == "X" ]; then
+				if [ "$category" == "X" ] || [ "$category" == "x" ]; then
 				# if exiting
-					exit_routine
-				
-				elif [ "$category" == "B" ]; then
+					exit_routine				
+				elif [ "$category" == "B" ] || [ "$category" == "b" ]; then
 				# if going back
 					back_menu
 					if [ "$old_category" ]; then
-					# if old_category is not empty, 
+					# if old_category is not empty,
+						# check it's not 'b'
+						if [ "$old_category" == "B" ]; then
+							echo "You have entered '$old_category', but the back option is not available."
+							read -p 'Please try again here >>> ' old_category  < /dev/tty
+							old_category=$(tr '[[:lower:]]' '[[:upper:]]' <<< $old_category)
+							echo "You entered: $old_category"
+						fi
 						# modify $previous_pair accordingly
 						previous_pair=$(echo "$(cut -d '|' -f 1-2 <<< $previous_pair)|$old_category")
 					# if category is empty, leave it empty
 					else
 						previous_pair=$(echo "$(cut -d '|' -f 1-2 <<< $previous_pair)|")
 					fi
-					
 					# now do current pair
 					standard_menu
-					if [ "$category" == "X" ]; then
+					if [ "$category" == "X" ] || [ "$category" == "x" ]; then
 						exit_routine
+					elif [ "$category" == "B" ] || [ "$category" == "b" ]; then
+						echo "You have entered '$category', but the back option is not available."
+						read -p 'Please try again here >>> ' category  < /dev/tty
+						category=$(tr '[[:lower:]]' '[[:upper:]]' <<< $category)
+						echo "You entered: $category"
 					fi
 				fi
 				# if category is not empty, 
