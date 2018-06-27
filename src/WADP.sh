@@ -2,10 +2,10 @@
 export PATH="$PATH:/usr/local/bin:/usr/bin:/bin:"$HOME/bin"" # needed for Cygwin
 ##############################################################################
 # WADP.sh 
-copyright="(c) 2015 Cardiff University; written by Andreas Buerki
+copyright="(c) 2015-2018 Cardiff University; written by Andreas Buerki
 Licensed under the EUPL v. 1.1"
 ####
-version="0.7"
+version="0.7.1"
 # DESCRRIPTION: processes word-association data
 ################# defining functions ###############################
 #
@@ -28,7 +28,7 @@ NOTE:         all other functions are accessed interactively.
 # define splash function
 #######################
 splash ( ) {
-echo "WADP (c) 2015 Cardiff University - Licensed under the EUPL v. 1.1"
+echo "WADP (c) 2015-2018 Cardiff University - Licensed under the EUPL v. 1.1"
 echo
 echo
 echo
@@ -459,4 +459,5 @@ done
 #	rm -r $SCRATCHDIR1
 #	rm -r $SCRATCHDIR2
 #fi
+echo "This window can now be closed."
 exit 0

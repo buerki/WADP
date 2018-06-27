@@ -1,9 +1,10 @@
 #!/bin/bash -
 export PATH="$PATH:/usr/local/bin:/usr/bin:/bin" # needed for Cygwin
 ##############################################################################
-# installer (c) 2015 Cardiff University, licensed under the EUPL V.1.1.
+# installer 
+copyright='(c) 2015-2018 Cardiff University' # licensed under the EUPL V.1.1.
 # written by Andreas Buerki
-version="0.6"
+version="0.7.1"
 ####
 ## set installation variables
 export title="WADP"
@@ -41,7 +42,7 @@ do
 	p)	pathonly=TRUE
 		;;
 	V)	echo "$(basename $(sed 's/ //g' <<<$0))	-	version $version"
-		echo "Copyright (c) 2015 Cardiff University"
+		echo "Copyright $copyright"
 		echo "licensed under the EUPL V.1.1"
 		echo "written by Andreas Buerki"
 		exit 0
@@ -97,31 +98,34 @@ fi
 ###########
 # getting agreement on licence
 ###########
-echo "This software is licensed under the open-source"
-echo "$licence"
-echo "The full licence is found at"
-echo "$URL"
-echo "or in the accompanying licence file."
-echo "Before installing and using the software, we ask"
-echo "that you agree to the terms of this licence."
-echo "If you agree, please type 'agree' and press ENTER,"
-echo "otherwise just press ENTER."
-read -p '> ' d < /dev/tty
-if [ "$d" != "agree" ]; then
-	echo
-	echo "Since the installation and use of this software requires"
-	echo "agreement to the licence, installation cannot continue."
-	sleep 2
-	exit 1
+if [ "$uninstall" ]; then
+	:
 else
-	echo "Thank you."
+	echo "This software is licensed under the open-source"
+	echo "$licence"
+	echo "The full licence is found at"
+	echo "$URL"
+	echo "or in the accompanying licence file."
+	echo "Before installing and using the software, we ask"
+	echo "that you agree to the terms of this licence."
+	echo "If you agree, please type 'agree' and press ENTER,"
+	echo "otherwise just press ENTER."
+	read -p '> ' d < /dev/tty
+	if [ "$d" != "agree" ]; then
+		echo
+		echo "Since the installation and use of this software requires"
+		echo "agreement to the licence, installation cannot continue."
+		sleep 2
+		exit 1
+	else
+		echo "Thank you."
+	fi
 fi
 ###########
 # setting path
 ###########
 if [ "$uninstall" ]; then
 	echo "path needs to be uninstalled manually."
-	exit 0
 else
 	# set path
 	# from now on, commands are executed from a subshell with -l (login) 
@@ -174,10 +178,12 @@ else
 	rm "$HOME/.icons/$linux_only" 2>/dev/null
 	rm $HOME/Desktop/WADP.desktop 2>/dev/null
 fi
+echo "removing icons"
 if [ "$uninstall" ]; then
+	echo "Uninstall completed. This window can now be closed."
+	sleep 5
 	exit 0
 fi
-
 # install files
 echo ""
 echo "Installing files to $HOME/bin"
@@ -252,6 +258,7 @@ elif [ "$DARWIN" ]; then
 	echo
 	echo "To start WADP, double-click on the WADP icon in your Applications folder $(if [ -e "$HOME/Desktop/$osx_only" ]; then echo "or on your desktop";fi)."
 	echo "Feel free to move it anywhere convenient."
+	echo "This window can now be closed."
 fi
 sleep 10
 echo "This window can now be closed."
