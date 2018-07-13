@@ -1,3 +1,17 @@
+release notes v. 0.7.2
+**********************
+
+Fixed a potential problem under MacOS X that would throw a security error when WADP.app seeks to open the Terminal application. Instead of installing the WADP.app, a WADP.command file (identical to WADP.sh) is installed in the applications folder and, if desired, on the desktop. installer.sh was adjusted to remove any existing WADP.app files.
+
+release notes v. 0.7.1
+**********************
+
+installer.sh
+- fixed a problem with the -u (uninstall) option, the programme exited too early, leaving files in place.
+
+WADP.sh
+- updated copyright and version number
+
 release notes v. 0.7
 ********************
 

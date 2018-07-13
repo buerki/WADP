@@ -4,7 +4,7 @@ export PATH="$PATH:/usr/local/bin:/usr/bin:/bin" # needed for Cygwin
 # installer 
 copyright='(c) 2015-2018 Cardiff University' # licensed under the EUPL V.1.1.
 # written by Andreas Buerki
-version="0.7.1"
+version="0.7.2"
 ####
 ## set installation variables
 export title="WADP"
@@ -13,7 +13,7 @@ export DESTINATION="${HOME}/bin"
 export DESTINATION2="/" # for cygwin-only files
 export cygwin_only="wicon.ico"
 export linux_only="wicon.png"
-export osx_only="WADP.app"
+export osx_only="WADP.command"
 export licence="European Union Public Licence (EUPL) v. 1.1."
 export URL="https://joinup.ec.europa.eu/community/eupl/og_page/european-union-public-licence-eupl-v11"
 # define functions
@@ -174,6 +174,8 @@ if [ "$CYGWIN" ]; then
 elif [ "$DARWIN" ]; then
 	rm -r /Applications/$osx_only 2>/dev/null
 	rm -r $HOME/Desktop/$osx_only 2>/dev/null
+	rm -r /Applications/WADP.app 2>/dev/null
+	rm -r $HOME/Desktop/WADP.app 2>/dev/null
 else
 	rm "$HOME/.icons/$linux_only" 2>/dev/null
 	rm $HOME/Desktop/WADP.desktop 2>/dev/null
