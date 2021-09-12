@@ -1,3 +1,12 @@
+release notes v. 1.0
+********************
+
+This version brings revisions to simplify installation by combining all subscripts into the main script file (WADP.sh) and updating installers to work with the latest security features of macOS/Linux/Windows. The Windows version switches support from Cygwin to Windows Subsystem for Linux. Further, the following enhancements were made
+- csv processing was enhanced to better represent double and single quotation marks in output files
+- the application window/terminal window resizes automatically to the correct size
+- streamlined some of the verbosity in the reporter module
+- manual and README files updated, added links to instruction videos on installation and use of the WADP
+
 release notes v. 0.7.2
 **********************
 

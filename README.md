@@ -1,9 +1,10 @@
-![WADP](src/wicon.png)
+![WADP](wicon.png)
 
 The Word Association Data Processor (WADP)
 ======================
+[![DOI](https://zenodo.org/badge/30462151.svg)](https://zenodo.org/badge/latestdoi/30462151)
 
-*see the included manual_0.6.pdf for detailed information, including a tutorial*
+*see the included manual_1.0.pdf for detailed information, including a tutorial*
 
 *******
 DESCRIPTION
@@ -20,32 +21,36 @@ The WADP offers:
 - tracking of respondent IDs and rater IDs (if provided) in all in- and output files
 - automatic creation of individual response profiles
 - automatic creation of cue profiles
-and more. For full documentation, a tutorial as well as installation instructions, see the manual.
+and more.
+
+For full documentation of all features, a tutorial as well as installation instructions, see the manual included in the distribution.
 
 
-The WADP is cross-platform and currently available as beta software. It was
-tested under OS X, Xubuntu Linux, and via Cygwin on Windows 7 and 8 and should work well on any platform that can run the bash shell.
 
 
 *******
 COMPATIBLE SYSTEMS
 
-The WADP was tested on OS X (v. 10.12), Xubuntu (v. 14.04), Ubuntu (v. 16.04) and Cygwin under Windows 10. It should run on all platforms on which a bash shell is installed, which includes Windows with the [Cygwin](cygwin.com) package installed.[^1]
-[^1]: The supplied WADP-installer and double-clickable launcher assume that Cygwin is installed in `C:\cygwin` which is the default location. For more information regarding Cygwin requirements, see the WADP manual.
+The WADP is cross-platform and tested under macOS (v. 11), Ubuntu Linux (v. 20.04), and via Windows Subsystem for Linux on Windows 10. It should work well on any platform that can run the bash shell.
 
 *******
 INSTALLATION
 
-Using the supplied installers:
+**macOS:** use the double-clickable `macOS_installer` provided (give macOS the necessary permissions if prompted), or drop the `install.sh` script into a Terminal window to run it. An installation tutorial for macOS is available [on vimeo](https://vimeo.com/603176910).
 
-For OS X, Ubuntu, Xubuntu and Cygwin, installers are provided. Move the WADP folder onto the Desktop of your computer. Inside the WADP directory, double-click on `Ubuntu_Installer` (for Ubuntu), `Xubuntu_installer` (for Xubuntu), `OSX_installer` (OS X) or `Cygwin_installer`/`Cygwin64_installer` (for Cygwin regular and 64-bit installations).[^3]
-[^3]: If the double-clickable installers fail to run (or when installing on other Linux/UNIX systems), open a terminal window and run the `install.sh` (inside the `src` folder) instead.
-These installers replace previous versions of the installed files. It may be necessary to log out and log in again before the installation takes effect. It should now be possible to launch the WADP by double-clicking on the yellow WADP icon placed on the desktop in in the WADP directory. For further details, see the included manual.
+
+**Windows:** The Windows Subsystem for Linux must be installed first (instructions [here](https://ubuntu.com/wsl)). Then use the double-clickable installer `Windows installer (WSL required)` provided. An WADP installation video tutorial for Windows is available [on vimeo](https://vimeo.com/603102292).
+
+**Linux:** Open a terminal window and drop the `install.sh` into the terminal window, then press ENTER. It may be necessary to make `install.sh` executable first by right-clicking on it, then > properties > permissions > tick the box 'Allow executing file as program'. An installation tutorial video is available [on vimeo](https://vimeo.com/603098792).
+
+**Manual installation:** Place the `WADP.sh` file into a directory in the user's `$PATH` to be able to launch it from the command line (it may be necessary to first grant the script permission to be executed).
+
+**Use without installation:** Run the `WADP.sh` script from a terminal application.
 
 *******
-MANUAL
+HOW TO USE
 
-A manual detailing the operation of the WADP, including a tutorial, is supplied as a PDF document in the WADP directory.
+A detailed manual, including a tutorial, is supplied as a PDF document in the WADP directory. A video tutorial is available [on vimeo](https://vimeo.com/603190447).
 
 
 *******
@@ -53,25 +58,13 @@ WRITTEN BY
 
 Andreas Buerki, <buerkiA@cardiff.ac.uk>  
 
-******
-SPECIAL THANKS TO
 
-Prof. Tess Fitzpatrick and Prof. Alison Wray
-
-******
-SEE ALSO
-
-http://buerki.github.io/ngramprocessor/
-
-http://buerki.github.io/SubString/
-
-http://applij.oxfordjournals.org/content/36/1/23.full.pdf+html
 
 *********
 COPYRIGHT
 
-Copyright 2015-17, Cardiff University
-Licensed under the EUPL V.1.1. (the European Union Public Licence) which is an open-source licence (see the EUPL.pdf file for the full licence).
+Copyright 2015-21, Cardiff University
+Licensed under the EUPL v1.2 or later. (the European Union Public Licence) which is an open-source licence (see the EUPL-1.2EN.txt file for the full licence).
 
 The project resides at [http://buerki.github.com/WADP/](http://buerki.github.com/WADP/) and new versions will be posted there. Suggestions and feedback are welcome. To be notified of new releases, go to https://github.com/buerki/WADP, click on the 'Watch' button and sign in.
 

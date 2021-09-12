@@ -1,3 +1,4 @@
+#!/bin/bash -
 sourcedir=$(dirname "$0")
 cd "$sourcedir"
-./src/install.sh
+./WADP.sh
