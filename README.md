@@ -47,10 +47,23 @@ INSTALLATION
 
 **Use without installation:** Run the `WADP.sh` script from a terminal application.
 
+
 *******
 HOW TO USE
 
 A detailed manual, including a tutorial, is supplied as a PDF document in the WADP directory. A video tutorial is available [on vimeo](https://vimeo.com/603190447).
+
+
+*******
+TEST
+
+To test whether the WADP installation works as it should, the following tests can be performed:
+
+- select (c) for categoriser and supply the file `five-extra.csv` from the `test_data` directory (supply no database), then rate all pairs as 'I'. The resulting output file should correspond to the contents of `categorised_five-extra.csv` (depending on the operating system, results may be listed in a different order).
+- select (r) for reporter, then select (a) for all reports and supply the file `categorised_five-extra.csv` from the `test_data` directory. The content of reports produced should agree with the files `c-report-test.csv`, `i-report-test.csv` and `p-report-test.csv`. The order in which entires are listed can differ between platforms, but substantive results should be identical.
+- select (a) for administrator and then (P) for 'produce a list of differences only'. Then supply the files `example_database.dat` and `example_database2.dat` when requested. The output should agree with `test-difference_report.txt` in the `test_data` directory.
+
+
 
 
 *******

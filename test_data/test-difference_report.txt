@@ -1,0 +1,43 @@
+Mon 30 Aug 2021 15:01:52 BST
+Differences example_database.dat vs. example_database2.dat
+-------------------------------------------------------------------------
+
+The following responses to cue "fence" differ:
+example_database.dat			 vs.		        example_database2.dat
+-							BARBED_WIRE_APOSTROPHE_D
+-							FENCING
+
+The following responses to cue "irony" differ:
+example_database.dat			 vs.		        example_database2.dat
+-							NO_FUN
+-							SHARP
+-							TWISTED
+
+The following responses to cue "rock" differ:
+example_database.dat			 vs.		        example_database2.dat
+-							STONE
+
+The following responses to cue "shove" differ:
+example_database.dat			 vs.		        example_database2.dat
+-							BACK
+-							RUDE
+-							SHOVEL
+
+The following responses to cue "variety" differ:
+example_database.dat			 vs.		        example_database2.dat
+-							SHOW
+
+The following ratings for cue "fence" differ:
+POST	CR	vs.	I
+
+The following ratings for cue "irony" differ:
+IRONIC	A	vs.	I
+
+The following ratings for cue "rock" differ:
+HARD	CRRC	vs.	I
+
+The following ratings for cue "shove" differ:
+PUSH	SRC	vs.	I
+
+The following ratings for cue "variety" differ:
+CHOICES	SS	vs.	I

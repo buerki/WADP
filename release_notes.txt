@@ -1,3 +1,9 @@
+release notes v. 1.0.1
+**********************
+
+Added description of how to test installation to the README file and added goldstandard files to test_data directory.
+
+
 release notes v. 1.0
 ********************
 
