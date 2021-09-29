@@ -36,7 +36,14 @@ The WADP is cross-platform and tested under macOS (v. 11), Ubuntu Linux (v. 20.0
 *******
 INSTALLATION
 
-**macOS:** use the double-clickable `macOS_installer` provided (give macOS the necessary permissions if prompted), or drop the `install.sh` script into a Terminal window to run it. An installation tutorial for macOS is available [on vimeo](https://vimeo.com/603176910).
+**macOS:** use the double-clickable `macOS_installer` provided (give macOS the necessary permissions if prompted). If a message appears saying that it cannot be opened because it is from an unidentified developer, click OK and ctrl-click/right-click on the script `macOS_installer`, then choose 'open' from the menu that appears, then click 'Open'. A Terminal window will pop up. If it complains about 'permission denied', follow these steps:
+
+- open a new tab in the Terminal window (press 'command-T' or choose Shell > New Tab)
+- type `chmod +a ` followed by a space into the Terminal window
+- drop the `install.sh` script (not `macOS_installer.command`) into the same Terminal window and press ENTER.
+- now double-click on the `macOS_installer.command` script again and follow the instructions displayed.
+
+An installation tutorial for macOS is available [on vimeo](https://vimeo.com/603176910).
 
 
 **Windows:** The Windows Subsystem for Linux must be installed first (instructions [here](https://ubuntu.com/wsl)). Then use the double-clickable installer `Windows installer (WSL required)` provided. An WADP installation video tutorial for Windows is available [on vimeo](https://vimeo.com/603102292).

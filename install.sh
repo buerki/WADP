@@ -5,7 +5,7 @@ export PATH="$PATH:/usr/local/bin:/usr/bin:/bin" # needed for Cygwin
 copyright='(c) 2015-2021 Cardiff University'
 # licensed under the EUPL v1.2 or later.
 # written by Andreas Buerki
-version="0.7.6"
+version="1.0.1"
 ####
 ## set installation variables
 export title="WADP"
@@ -261,8 +261,8 @@ StartupNotify=false" > "$HOME/Desktop/WADP.desktop"
 # create app on MacOS
 #####################
 elif [ "$DARWIN" ]; then
-	cp -r "$sourcedir/$osx_only" /Applications || sudo cp -r "$sourcedir/$osx_only" /Applications/WADP.command 
-	cp -r "$sourcedir/$osx_only" "$(dirname "$sourcedir")/WADP.command"
+	cp -r "$sourcedir/$osx_only" /Applications/WADP.command || sudo cp -r "$sourcedir/$osx_only" /Applications/WADP.command 
+	#cp -r "$sourcedir/$osx_only" "$(dirname "$sourcedir")/WADP.command"
 	echo "The application WADP was placed in your Applications folder."
 	read -t 10 -p 'Create icon on the desktop? (Y/n) ' d < /dev/tty
 	if [ "$d" == "y" ] || [ "$d" == "Y" ] || [ -z "$d" ]; then

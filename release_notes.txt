@@ -1,7 +1,7 @@
 release notes v. 1.0.1
 **********************
 
-Added description of how to test installation to the README file and added goldstandard files to test_data directory.
+Added description of how to test installation to the README file and added gold-standard files to test_data directory. A slight adjustment was made to the installation instructions and installer.sh relating to installation under macOS.
 
 
 release notes v. 1.0
