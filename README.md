@@ -1,10 +1,10 @@
-![WADP](wicon.png)
+![](wicon.png)
 
 The Word Association Data Processor (WADP)
 ======================
-[![DOI](https://zenodo.org/badge/30462151.svg)](https://zenodo.org/badge/latestdoi/30462151)
+[![DOI](https://zenodo.org/badge/30462151.svg)](https://zenodo.org/badge/30462151.svg)
 
-*see the included manual_1.0.pdf for detailed information, including a tutorial*
+*see the included PDF manual for detailed information, including a tutorial*
 
 *******
 DESCRIPTION
@@ -34,25 +34,28 @@ COMPATIBLE SYSTEMS
 The WADP is cross-platform and tested under macOS (v. 11), Ubuntu Linux (v. 20.04), and via Windows Subsystem for Linux on Windows 10. It should work well on any platform that can run the bash shell.
 
 *******
-INSTALLATION
+STARTING THE APPLICATION
 
-**macOS:** use the double-clickable `macOS_installer` provided (give macOS the necessary permissions if prompted). If a message appears saying that it cannot be opened because it is from an unidentified developer, click OK and ctrl-click/right-click on the script `macOS_installer`, then choose 'open' from the menu that appears, then click 'Open'. A Terminal window will pop up. If it complains about 'permission denied', follow these steps:
+The WADP is fully contained in the bash shell script file "`WADP.sh`" (or "`WADP macOS`" for macOS) and can be run like any bash script.
+
+**Linux:** To run the WADP without installation, open the "`WADP.sh`" file in a terminal application. It may be necessary to make `WADP.sh` executable first by right-clicking on it, then > properties > permissions > tick the box 'Allow executing file as program'. To install in `$HOME/bin` and create a desktop double-clickable link, open a terminal window and drop the "`install.sh`" script into the terminal window, then press ENTER (again, it may be necessary to make the script executable first).  An installation tutorial video is available [on vimeo](https://vimeo.com/603098792).
+
+
+**macOS:** To run the WADP, double-click on the file "`WADP macOS`" (give macOS the necessary permissions if prompted). If a message appears saying that it cannot be opened because it is from an unidentified developer, click OK and ctrl-click/right-click on the script, then choose 'open' from the menu that appears. A Terminal window will pop up. If it complains about 'permission denied', follow these steps:
 
 - open a new tab in the Terminal window (press 'command-T' or choose Shell > New Tab)
 - type `chmod +a ` followed by a space into the Terminal window
-- drop the `install.sh` script (not `macOS_installer.command`) into the same Terminal window and press ENTER.
-- now double-click on the `macOS_installer.command` script again and follow the instructions displayed.
+- drop the `WADP macOS` file into the same Terminal window and press ENTER.
+- now double-click on the "`WADP macOS.command`" file again.
 
-An installation tutorial for macOS is available [on vimeo](https://vimeo.com/603176910).
+To install the WADP, An installation tutorial for macOS is available [on vimeo](https://vimeo.com/603176910).
 
 
-**Windows:** The Windows Subsystem for Linux must be installed first (instructions [here](https://ubuntu.com/wsl)). Then use the double-clickable installer `Windows installer (WSL required)` provided. An WADP installation video tutorial for Windows is available [on vimeo](https://vimeo.com/603102292).
+**Windows:** The Windows Subsystem for Linux must be installed first (instructions [here](https://ubuntu.com/wsl)). Then use the double-clickable installer "`Windows installer (WSL required)`" provided. An WADP installation video tutorial for Windows is available [on vimeo](https://vimeo.com/603102292).
 
-**Linux:** Open a terminal window and drop the `install.sh` into the terminal window, then press ENTER. It may be necessary to make `install.sh` executable first by right-clicking on it, then > properties > permissions > tick the box 'Allow executing file as program'. An installation tutorial video is available [on vimeo](https://vimeo.com/603098792).
 
-**Manual installation:** Place the `WADP.sh` file into a directory in the user's `$PATH` to be able to launch it from the command line (it may be necessary to first grant the script permission to be executed).
+**Manual installation:** Place the "`WADP.sh`" file into a directory in the user's `$PATH` to be able to launch it from the command line (it may be necessary to first grant the script permission to be executed).
 
-**Use without installation:** Run the `WADP.sh` script from a terminal application.
 
 
 *******

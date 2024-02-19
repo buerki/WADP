@@ -1,3 +1,11 @@
+release notes v. 1.0.2
+**********************
+
+- Renamed software licence file to LICENSE.txt
+- included a copy of the main script named WADP_macOS.command to faciliate easier handling under macOS.
+- Updated instructions for installation under macOS in README.md/README.pdf and the manual (now updated to v1.0.2 as well).
+
+
 release notes v. 1.0.1
 **********************
 
