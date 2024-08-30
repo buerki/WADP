@@ -1,3 +1,22 @@
+release notes v. 1.1
+********************
+
+- replaced egrep with grep -E commands internally to avoid unnecessary warnings
+- changed format of .tmp database file saved after 30 manual ratings to be of the regular db format.
+  It can be used just like a normal db now if necessary.
+- implemented a timeout after an hour for module selection on the first screen
+- implemented timeouts in the categorisation module so that if there is no activity for three hours, 
+  categorisations up to that point will be saved and the programme will exit. This prevents potential
+  errors when temporary files are deleted by the OS while the programme is left open and waiting for 
+  categorisation input for days.
+- added hours, minutes and seconds (in addition to date) to the dated filenames for databases to make it
+  easier to keep track of most recent versions of these files
+- when producing output files from partially categorised data, a note is added to ech incomplete row of
+  the output file to say it is incomplete, but categorisations were saved in the database nonetheless.
+- updated manual and README file
+
+
+
 release notes v. 1.0.2
 **********************
 

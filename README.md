@@ -31,7 +31,7 @@ For full documentation of all features, a tutorial as well as installation instr
 *******
 COMPATIBLE SYSTEMS
 
-The WADP is cross-platform and tested under macOS (v. 11), Ubuntu Linux (v. 20.04), and via Windows Subsystem for Linux on Windows 10. It should work well on any platform that can run the bash shell.
+The WADP is cross-platform and tested under Linux, macOS and via Windows Subsystem for Linux (WSL1 with an Ubuntu installation). It should work well on any platform that can run the bash shell.
 
 *******
 STARTING THE APPLICATION
@@ -48,13 +48,13 @@ The WADP is fully contained in the bash shell script file "`WADP.sh`" (or "`WADP
 - drop the `WADP macOS` file into the same Terminal window and press ENTER.
 - now double-click on the "`WADP macOS.command`" file again.
 
-To install the WADP, An installation tutorial for macOS is available [on vimeo](https://vimeo.com/603176910).
+An installation video for macOS is available [on vimeo](https://vimeo.com/603176910).
 
 
-**Windows:** The Windows Subsystem for Linux must be installed first (instructions [here](https://ubuntu.com/wsl)). Then use the double-clickable installer "`Windows installer (WSL required)`" provided. An WADP installation video tutorial for Windows is available [on vimeo](https://vimeo.com/603102292).
+**Windows:** The Windows Subsystem for Linux must be installed first (instructions [here](https://ubuntu.com/wsl)). Then use the double-clickable installer "`Windows installer (WSL required)`" provided. An WADP installation video tutorial for Windows is available [on vimeo](https://vimeo.com/603102292). The WSL gets confused if the WADP programme or any of the input files are not located on the C: drive, so it is best to copy all files there first if they are on different drives.
 
 
-**Manual installation:** Place the "`WADP.sh`" file into a directory in the user's `$PATH` to be able to launch it from the command line (it may be necessary to first grant the script permission to be executed).
+**Generic manual installation:** Place the "`WADP.sh`" file into a directory in the user's `$PATH` to be able to launch it from the command line (it may be necessary to first grant the script permission to be executed).
 
 
 
@@ -86,7 +86,7 @@ Andreas Buerki, <buerkiA@cardiff.ac.uk>
 *********
 COPYRIGHT
 
-Copyright 2015-21, Cardiff University
+Copyright 2015-21, 2024, Cardiff University
 Licensed under the EUPL v1.2 or later. (the European Union Public Licence) which is an open-source licence (see the EUPL-1.2EN.txt file for the full licence).
 
 The project resides at [http://buerki.github.com/WADP/](http://buerki.github.com/WADP/) and new versions will be posted there. Suggestions and feedback are welcome. To be notified of new releases, go to https://github.com/buerki/WADP, click on the 'Watch' button and sign in.

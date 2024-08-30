@@ -70,10 +70,8 @@ if [ "$(grep 'Microsoft' <<< $platform)" ]; then
 	#fi
 elif [ "$(grep 'Darwin' <<< $platform)" ];then
 	DARWIN=TRUE
-elif [ "$(grep 'Linux' <<< $platform)" ]; then
-	LINUX=TRUE
 else
-	# probably some flavour of Linux
+	# assume a flavour of Linux
 	LINUX=TRUE
 fi
 # ascertain source directory
@@ -258,21 +256,21 @@ StartupNotify=false" > "$HOME/Desktop/WADP.desktop"
 	echo "Installation complete."
 	echo "To start WADP, double-click on the WADP launcher."
 #####################
-# create app on MacOS
+# create app on MacOS (this no longer works)
 #####################
-elif [ "$DARWIN" ]; then
-	cp -r "$sourcedir/$osx_only" /Applications/WADP.command || sudo cp -r "$sourcedir/$osx_only" /Applications/WADP.command 
-	#cp -r "$sourcedir/$osx_only" "$(dirname "$sourcedir")/WADP.command"
-	echo "The application WADP was placed in your Applications folder."
-	read -t 10 -p 'Create icon on the desktop? (Y/n) ' d < /dev/tty
-	if [ "$d" == "y" ] || [ "$d" == "Y" ] || [ -z "$d" ]; then
-		cp -r "$sourcedir/$osx_only" $HOME/Desktop/WADP.command
-	fi
-	echo "Installation complete."
-	echo
-	echo "To start WADP, double-click on the WADP icon in your Applications folder $(if [ -e "$HOME/Desktop/$osx_only" ]; then echo "or on your desktop";fi)."
-	echo "Feel free to move it anywhere convenient."
-	echo "This window can now be closed."
+#elif [ "$DARWIN" ]; then
+#	cp -r "$sourcedir/$osx_only" /Applications/WADP.command || sudo cp -r "$sourcedir/$osx_only" /Applications/WADP.command 
+#	#cp -r "$sourcedir/$osx_only" "$(dirname "$sourcedir")/WADP.command"
+#	echo "The application WADP was placed in your Applications folder."
+#	read -t 10 -p 'Create icon on the desktop? (Y/n) ' d < /dev/tty
+#	if [ "$d" == "y" ] || [ "$d" == "Y" ] || [ -z "$d" ]; then
+#		cp -r "$sourcedir/$osx_only" $HOME/Desktop/WADP.command
+#	fi
+#	echo "Installation complete."
+#	echo
+#	echo "To start WADP, double-click on the WADP icon in your Applications folder $(if [ -e "$HOME/Desktop/$osx_only" ]; then echo "or on your desktop";fi)."
+#	echo "Feel free to move it anywhere convenient."
+#	echo "This window can now be closed."
 fi
 sleep 10
 echo "This window can now be closed."

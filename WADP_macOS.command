@@ -1,10 +1,16 @@
 #!/bin/bash -
 ##############################################################################
 # WADP.sh 
-copyright="(c) 2015-2021 Cardiff University; Licensed under the EUPL v. 1.2 or later"
+copyright="(c) 2015-2024 Cardiff University; Licensed under the EUPL v. 1.2 or later"
 ####
-version="1.0"
+version="1.1"
 # DESCRRIPTION: processes word-association data
+################# defining timeout variables
+TMOUTSPLASH=3600 # timeout for splash screen of module selection
+TMOUT1=10800     # timeout for categorisations in seconds
+TMOUT2=60        # timeout for exit questions at the end of categoriser
+TMOUT3=600       # timeout for return to main menu after categoriser
+# TMOUT=20       # general timeout for read, not active
 ################# defining functions ###############################
 #
 #######################
@@ -44,19 +50,27 @@ echo "          (r)  reporter"
 echo "          (a)  administrator"
 echo "          (x)  exit"
 echo
-read -p '           ' module  < /dev/tty
+read -t $TMOUTSPLASH -p '           ' module  < /dev/tty
+# handle possible timeout
+if [ $? == 0 ]; then
+	:
+else
+	echo ""
+	echo "the session TIMED OUT, please start a new WADP session."
+	module='X'
+fi
 case $module in
 C|c)	echo "loading categoriser module ..."
 	run_categoriser
-	#read -p 'Press ENTER to return to the main menu.' resp
+	#read -t $TMOUTSPLASH -p 'Press ENTER to return to the main menu.' resp
 	;;
 R|r)	echo "loading reporter module ..."
 	run_reporter
-	read -p 'Press ENTER to return to the main menu.' resp
+	read -t $TMOUTSPLASH -p 'Press ENTER to return to the main menu.' resp
 	;;
 A|a)	echo "loading administrator module ..."
 	run_administrator
-	read -p 'Press ENTER to return to the main menu.' resp
+	read -t $TMOUTSPLASH -p 'Press ENTER to return to the main menu.' resp
 	;;
 X|x)	echo "This window can now be closed"; exit 0
 	;;
@@ -136,7 +150,7 @@ if [ "$WSL" ]; then
 	fi
 fi
 printf "\033c"
-# sort out potential cygwin problems
+# sort out potential WSL problems
 if [ "$WSL" ]; then
 	# if it wasn't possible to cd earlier, warn if in -d mode
 	if [ "$dirfail" ]; then
@@ -151,34 +165,60 @@ if [ "$WSL" ]; then
 		if [ "$diagnostic" ]; then
 			echo "categoriser.sh $ratID $database $infile"
 			read -p 'press ENTER to continue ' xxx < /dev/tt
-			printf "\033c"
-			splash
 		fi
 		categoriser -a $ratID "$database" "$infile"
-		read -p 'Press ENTER to return to the main menu.' resp
+		read -t $TMOUT3 -p 'Press ENTER to return to the main menu.' resp
+		# handle possible timeout
+		if [ $? == 0 ]; then
+			printf "\033c"
+			splash
+		else
+			echo "TIMEOUT"
+			echo "any unsaved categorisations were saved in the database (see above for the name of the database)"
+			exit 0
+		fi
 	else
 		if [ "$diagnostic" ]; then
 			echo "categoriser.sh -a $ratID $infile"
 			read -p 'press ENTER to continue ' xxx < /dev/tt
-			printf "\033c"
-			splash
 		fi
 		categoriser -a $ratID "$infile"
-		read -p 'Press ENTER to return to the main menu.' resp
-		printf "\033c"
-		splash
+		read -t $TMOUT3 -p 'Press ENTER to return to the main menu.' resp
+		# handle possible timeout
+		if [ $? == 0 ]; then
+			printf "\033c"
+			splash
+		else
+			echo " TIMEOUT"
+			echo "any unsaved categorisations were saved in the database (see above for the name of the database)"
+			exit 0
+		fi
 	fi
-else
+else # if not running under WSL
 	if [ "$database" ]; then
 		categoriser -a $ratID "$database" "$infile"
-		read -p 'Press ENTER to return to the main menu.' resp
-		printf "\033c"
-		splash
+		read -t $TMOUT3 -p 'Press ENTER to return to the main menu.' resp
+		# handle possible timeout
+		if [ $? == 0 ]; then
+			printf "\033c"
+			splash
+		else
+			echo "TIMEOUT"
+			echo "any unsaved categorisations were saved in the database (see above for the name of the database)"
+			exit 0
+		fi
 	else
 		categoriser -a $ratID "$infile"
-		read -p 'Press ENTER to return to the main menu.' resp
-		printf "\033c"
-		splash
+		read -t $TMOUT3 -p 'Press ENTER to return to the main menu.' resp
+		# handle possible timeout
+		if [ $? == 0 ]; then
+			printf "\033c"
+			splash
+		else
+			echo "TIMEOUT"
+			echo "any unsaved categorisations were saved in the database (see above for the name of the database)"
+			exit 0
+		fi
 	fi
 fi
 }
@@ -186,11 +226,7 @@ fi
 # define categoriser function
 #############################################################################
 categoriser ( ) (
-#!/bin/bash -
-##############################################################################
-copyright="$(basename $0) (c) 2015-21 Cardiff University - Licensed under the EUPL v. 1.2 or later"
 ####
-version="1.0"
 # DESCRRIPTION: assigns categories to word-association data
 ################ the following section can be adjusted
 # the key used for category assignments
@@ -241,6 +277,14 @@ sed "s/$/$(printf '\r')/g" "$1"
 remove_windows_returns ( ) {
 sed "s/$(printf '\r')//g" "$1"
 }
+
+#######################
+# define remove_boms_macOS function
+#######################
+remove_boms_macOS ( ) {
+sed $'s/\xEF\xBB\xBF//' "$1"
+}
+
 #######################
 # define help function
 #######################
@@ -264,7 +308,7 @@ OPTIONS:      -a   run as auxiliary script to WADP
 ####
 add_to_name ( ) {
 count=
-if [ "$(egrep '.csv$' <<<"$1")" ]; then
+if [ "$(grep -E '.csv$' <<<"$1")" ]; then
 	if [ -e "$1" ]; then
 		add=-
 		count=1
@@ -277,7 +321,7 @@ if [ "$(egrep '.csv$' <<<"$1")" ]; then
 		add=
 	fi
 	output_filename="$(sed 's/\.csv//' <<< "$1")$add$count.csv"
-elif [ "$(egrep '.dat$' <<< "$1")" ]; then
+elif [ "$(grep -E '.dat$' <<< "$1")" ]; then
 	if [ -e "$1" ]; then
 		add=-
 		count=1
@@ -334,10 +378,16 @@ standard_menu ( ) {
 		 echo "  (B)     back to previous pair"
 		fi
 		echo " "
-		read -p '>>> ' category  < /dev/tty
-		category=$(tr '[[:lower:]]' '[[:upper:]]' <<< $category)
-		echo "You entered: $category"
-		sleep 0.4
+		read -t $TMOUT1 -p '>>> ' category  < /dev/tty
+		# timeout handling
+		if [ $? == 0 ]; then
+			category=$(tr '[[:lower:]]' '[[:upper:]]' <<< $category)
+			echo "You entered: $category"
+			sleep 0.4
+		else
+			echo "TIMEOUT"
+			category='X'
+		fi
 }
 ###################
 # back menu function (displays standard menu)
@@ -350,10 +400,17 @@ back_menu ( ) {
 		echo " "
 		echo "type a fresh choice and press ENTER:"
 		echo "$key"
-		read -p '>>> ' old_category  < /dev/tty
-		old_category=$(tr '[[:lower:]]' '[[:upper:]]' <<< $old_category)
-		echo "You entered: $old_category"
-		sleep 0.4
+		read -t $TMOUT1 -p '>>> ' old_category  < /dev/tty
+		# timeout handling
+		if [ $? == 0 ]; then
+			old_category=$(tr '[[:lower:]]' '[[:upper:]]' <<< $old_category)
+			echo "You entered: $old_category"
+			sleep 0.4
+		else
+			echo "TIMEOUT"
+			category='' # no category assigned
+		fi
+
 }
 ###################
 # exit_routine function (saves output files)
@@ -365,7 +422,7 @@ if [ "$previous_pair" ]; then
 	# write current_assignment to output list
 	echo "$previous_pair$rater_id" >> $SCRATCHDIR/$categorised_out
 	# update db with current_assignment's response and cat
-	if [ -z "$(egrep '\|$' <<< $previous_pair)" ]; then
+	if [ -z "$(grep -E '\|$' <<< $previous_pair)" ]; then
 		# if the category assigned is not empty
 		echo "$(cut -d '|' -f 2-3 <<< $previous_pair)$rater_id" >> $DBSCRATCHDIR/$previous_cue 2> /dev/null
 	fi
@@ -387,9 +444,19 @@ else
 	if [ "$db_filename" ]; then
 		if [ "$db_is_dat" ]; then
 			db_filename_only="$(basename "$db_filename")"
-			read -p '     Update database (U) or create new database? (n) ' retain  < /dev/tty
+			read -t $TMOUT2 -p '     Update database (U) or create new database? (n) ' retain  < /dev/tty
+			# handle possible timeout
+			if [ $? == 0 ]; then
+				:
+			else
+				echo "timeout"
+			fi
 			if [ "$retain" == "n" ] || [ "$retain" == "N" ]; then
-				add_to_name db-$(date "+%d-%m-%Y%n").dat
+				if [ $DARWIN ]; then
+					add_to_name db-$(date "+%d-%m-%Y_%H.%M.%S").dat
+				else
+					add_to_name db-$(date "+%d-%m-%Y_%H:%M:%S").dat
+				fi
 				dboutfilename=$output_filename
 				echo "     $db_filename_only left unchanged, new database named $dboutfilename."
 			else
@@ -404,13 +471,21 @@ else
 			fi
 		else
 			# if the input db was a csv file
-			add_to_name db-$(date "+%d-%m-%Y%n").dat
+			if [ $DARWIN ]; then
+				add_to_name db-$(date "+%d-%m-%Y_%H.%M.%S").dat
+			else
+				add_to_name db-$(date "+%d-%m-%Y_%H:%M:%S").dat
+			fi
 			dboutfilename=$output_filename
 			echo "     New database file saved as \"$dboutfilename\"."
 		fi
 	else
 		# if we have no input db
-		add_to_name db-$(date "+%d-%m-%Y%n").dat
+		if [ $DARWIN ]; then
+			add_to_name db-$(date "+%d-%m-%Y_%H.%M.%S").dat
+		else
+			add_to_name db-$(date "+%d-%m-%Y_%H:%M:%S").dat
+		fi
 		dboutfilename=$output_filename
 		echo "     New database file saved as \"$dboutfilename\"."
 	fi
@@ -418,16 +493,24 @@ else
 	add_to_name $dboutfilename
 	dboutfilename=$output_filename
 	cp $SCRATCHDIR/finished_db.dat $dboutfilename
+	echo $dboutfilename > $SCRATCHDIR/autosavedbname
 fi
 ### check if out-file is required
 if [ -z "$final_writeout" ]; then
 	echo "The rating is not complete, yet."
-	read -p 'Output list for the part that is complete? (Y/n)' req_out < /dev/tty
+	read -t $TMOUT2 -p 'Output list for the part that is complete? (Y/n)' req_out < /dev/tty
+	# handle possible timeout
+	if [ $? == 0 ]; then
+		:
+	else
+		echo "timeout"
+	fi
 	if [ "$req_out" == "n" ] || [ "$req_out" == "N" ]; then
 		if [ "$db_nochange" ]; then
 			:
 		else
 			echo "updated database file only..."
+			sleep 0.5
 		fi
 	else
 		write_inout
@@ -441,7 +524,13 @@ fi
 rm db.dat.tmp 2> /dev/null &
 rm -r $SCRATCHDIR $DBSCRATCHDIR 2> /dev/null &
 ### ask if dir should be opened
-read -p 'Would you like to open the output directory? (Y/n)' a  < /dev/tty
+read -t $TMOUT2 -p 'Would you like to open the output directory? (Y/n)' a  < /dev/tty
+# handle possible timeout
+if [ $? == 0 ]; then
+	:
+else
+	echo "timeout"
+fi
 if [ "$a" == "y" ] || [ "$a" == "Y" ] || [ -z "$a" ]; then
 	if [ "$(grep 'Microsoft' <<< $platform)" ]; then
 		explorer.exe `wslpath -w "$PWD"`
@@ -473,7 +562,7 @@ if [ "$in_with_ID" ]; then
 	done
 	# new write to outfile
 	sed $extended -e 's/^/\"/' -e 's/\|$/\"/g' -e 's/\|/\",\"/g' <<< "$in_header_out" > "$categorised_out"
-	# correct erroneous newline characters in cygwin
+	# correct erroneous newline characters in Windows
 	if [ "$WSL" ]; then
 		#conv -U "$categorised_out" 2>/dev/null
 		tr '\n' '*' < "$categorised_out" | sed 's/*//g' > "$categorised_out."
@@ -515,8 +604,11 @@ if [ "$in_with_ID" ]; then
 		# assemble row in variable out_row
 		# first get ID
 		out_row="$ID|"
-		# now get pairs for that row (it needs to check if row is complete and only prints complete rows, otherwise things would be a mess)
-		responses_in_this_row="$(egrep "^$row:" $SCRATCHDIR/$categorised_out | sort | cut -d '|' -f 2-3)"
+		# now get pairs for that row (it needs to check if row is complete and only prints complete rows)
+		# This is because header and rows could possibly be out of alignment in the case of incomplete rows, though because
+		# headers and rows have responses in alphabetical order, and ratings are also gone through in alphabetical order
+		# by response, it seems to hold up. Nevertheless, for the moment, partial rows are not printed unless -d option active, see below
+		responses_in_this_row="$(grep -E "^$row:" $SCRATCHDIR/$categorised_out | sort | cut -d '|' -f 2-3)"
 		if [ "$output_raterIDs" ]; then
 			responses_in_this_row="$(sed 's/;/\",\"/' <<< "$responses_in_this_row")"
 		else
@@ -526,6 +618,19 @@ if [ "$in_with_ID" ]; then
 		# if we have a complete row, write it out
 			out_row+="$(tr '\n' '|' <<< "$responses_in_this_row")"
 			write_neatly >> "$categorised_out"
+		else
+			if [ $diagnostic ]; then
+			# this is for outputting partial rows of categorised responses. This feature is experimental
+				if [ "$(wc -l <<< "$responses_in_this_row")" -gt 1 ]; then
+					echo "incomplete row added to output"
+					out_row+="$(tr '\n' '|' <<< "$responses_in_this_row")"
+					write_neatly | sed 's/$/,NB: this row is not yet complete; the remainder will be output once categorisation for this row is complete. Output of incomplete rows is an experimental feature. Only the output of completed rows has been fully tested./' >> "$categorised_out"
+				else
+					echo "\"$(sed 's/_/ /g' <<< $ID)\",\"NB: this row is not yet complete; once the categories for the complete row have been assigned, they will be output. The categorisations were saved in the database.\"" >> "$categorised_out"
+				fi
+			else
+				echo "\"$(sed 's/_/ /g' <<< $ID)\",\"NB: this row is not yet complete; once the categories for the complete row have been assigned, they will be output. The categorisations were saved in the database.\"" >> "$categorised_out"
+			fi
 		fi
 		# clear variable for next row
 		out_row=
@@ -537,8 +642,11 @@ if [ "$in_with_ID" ]; then
 else
 	for n in $(eval echo {1..$(( $in_rows - 1 ))}); do
 		(( row += 1 ))
-		# assemble row in variable out_row (it needs to check if row is complete and only prints complete rows, otherwise things would be a mess)
-		responses_in_this_row="$(egrep "^$row:" $SCRATCHDIR/$categorised_out | sort | cut -d '|' -f 2-3)"
+		# assemble row in variable out_row (it needs to check if row is complete and only prints complete rows)
+		# This is because header and rows could possibly be out of alignment in the case of incomplete rows, though because
+		# headers and rows have responses in alphabetical order, and ratings are also gone through in alphabetical order
+		# by response, it seems to hold up. Nevertheless, for the moment, partial rows are not printed unless -d option active, see below
+		responses_in_this_row="$(grep -E "^$row:" $SCRATCHDIR/$categorised_out | sort | cut -d '|' -f 2-3)"
 		if [ "$output_raterIDs" ]; then
 			responses_in_this_row="$(sed 's/;/\",\"/' <<< "$responses_in_this_row")"
 		else
@@ -549,6 +657,19 @@ else
 		# if we have a complete row, write it out
 			out_row+="$(tr '\n' '|' <<< "$responses_in_this_row")"
 			write_neatly >> "$categorised_out"
+		else
+			if [ $diagnostic ]; then
+			# this is for outputting partial rows of categorised responses. This feature is experimental
+				if [ "$(wc -l <<< "$responses_in_this_row")" -gt 1 ]; then
+					echo "incomplete row added to output"
+					out_row+="$(tr '\n' '|' <<< "$responses_in_this_row")"
+					write_neatly | sed 's/$/,NB: this row is not yet complete; the remainder will be output once categorisation for this row is complete. Output of incomplete rows is an experimental feature. Only the output of completed rows has been fully tested./' >> "$categorised_out"
+				else
+					echo "\"NB: this row is not yet complete; once the categories for the complete row have been assigned, they will be output. The categorisations were saved in the database.\"" >> "$categorised_out"
+				fi
+			else
+				echo "\"NB: this row is not yet complete; once the categories for the complete row have been assigned, they will be output. The categorisations were saved in the database.\"" >> "$categorised_out"
+			fi
 		fi
 		# clear variable for next row
 		out_row=
@@ -556,6 +677,13 @@ else
 fi
 else # this is the else for checking if SCRATCHDIR/categorised_out exists
 	echo "$categorised_out will only contain a header because of the small number of ratings performed."
+	echo "This output file only contains a header because no categorisations have been recorded. Once categorisations have been recorded, they will be printed in future output files." >> "$categorised_out"
+	sleep 1
+	if [ $diagostic ]; then
+				echo "looking at $row in $SCRATCHDIR/$categorised_out..."
+				grep -E "^$row:" $SCRATCHDIR/$categorised_out
+				read -p '           press ENTER to continue ' a  < /dev/tty
+	fi
 fi
 }
 ###################
@@ -643,21 +771,22 @@ case $# in
 	1)	if [ -s "$1" ]; then
 			# remove any Windows returns
 			remove_windows_returns "$1" > "$1.corr"
-			mv "$1.corr" "$1"
+			remove_boms_macOS "$1.corr" > "$1"
+			rm "$1.corr"
 		else
 			echo "ERROR: could not open $1" >&2
 			exit 1
 		fi
-		if [ "$(egrep '\.csv$' <<<"$1" 2>/dev/null)" ]; then
+		if [ "$(grep -E '\.csv$' <<<"$1" 2>/dev/null)" ]; then
 			# testing if $1 is a db file by looking for fields with first,
 			# second, tenth and fourteenth category of the variable allowed_categories
-			if [ "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" "$1")" ]; then
+			if [ "$(grep -E "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" "$1")" ]; then
 				echo "ERROR: \"$1\" appears to be a database file. A .csv file for rating also needs to be provided."
 				exit 1
 			fi
 			read -p '          No database for category lookup was provided. Continue? (Y/n)' d \
 			< /dev/tty
-			if [ "$(egrep 'N|n' <<< $d)" ]; then
+			if [ "$(grep -E 'N|n' <<< $d)" ]; then
 				echo "exiting"
 				exit 0
 			fi
@@ -672,24 +801,26 @@ case $# in
 	2)	if [ -s "$1" ] && [ -s "$2" ]; then
 			# remove any Windows returns
 			remove_windows_returns "$1" > "$1.corr"
-			mv "$1.corr" "$1"
+			remove_boms_macOS "$1.corr" > "$1"
+			rm "$1.corr"
 			remove_windows_returns "$2" > "$2.corr"
-			mv "$2.corr" "$2"
+			remove_boms_macOS "$2.corr" > "$2"
+			rm "$2.corr"
 		else
 			echo "ERROR: could not access file(s) $1 and/or $2" >&2
 			exit 1
 		fi
 		# if a .dat and a .csv file are provided
-		if [ "$(egrep '\.csv' <<<"$2")" ] && [ "$(egrep '\.dat' <<<"$1")" ]; then
+		if [ "$(grep -E '\.csv' <<<"$2")" ] && [ "$(grep -E '\.dat' <<<"$1")" ]; then
 				# test if $2 is NOT a db file
-				if [ -z "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" "$2")" ]; then
+				if [ -z "$(grep -E "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" "$2")" ]; then
 					wa_in_filename="$2"
 				else
 					echo "ERROR: \"$2\" appears to be a database file." >&2
 					exit 1
 				fi
 				# test if $1 is a db file
-				if [ "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories | sed $extended -e 's/,/  .+|/g' -e 's/^/\.+|/' -e 's/$/  /g')" "$1")" ]; then
+				if [ "$(grep -E "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories | sed $extended -e 's/,/  .+|/g' -e 's/^/\.+|/' -e 's/$/  /g')" "$1")" ]; then
 					db_filename="$1"
 					db_is_dat=true
 				else
@@ -697,9 +828,9 @@ case $# in
 					exit 1
 				fi
 		# if two .csv files are provided
-		elif [ "$(egrep '\.csv'<<<"$1")" ] &&  [ "$(egrep '\.csv'<<<"$2")" ]; then
+		elif [ "$(grep -E '\.csv'<<<"$1")" ] &&  [ "$(grep -E '\.csv'<<<"$2")" ]; then
 			# test if $1 is db file
-			if [ "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" "$1")" ]; then
+			if [ "$(grep -E "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" "$1")" ]; then
 				grand_db="$1"
 				db_filename="$1"
 			else
@@ -707,7 +838,7 @@ case $# in
 				exit 1
 			fi
 			# test if $2 is not a db file
-			if [ -z "$(egrep "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" "$2")" ]; then
+			if [ -z "$(grep -E "$(cut -d ',' -f 1,2,10,14 <<< $allowed_categories| sed $extended -e 's/,/,|,/g' -e 's/^/,/' -e 's/$/,/g' )" "$2")" ]; then
 				wa_in_filename="$2"
 			else
 				echo "ERROR: \"$2\" appears to be a database file, but should be a file with data to be rated." >&2
@@ -744,7 +875,7 @@ if [ "$DBSCRATCHDIR" == "" ] ; then
 	DBSCRATCHDIR=${TMPDIR-/tmp/}categoriserXXX.1$$
 fi
 if [ "$diagnostic" == true ]; then
-	open $DBSCRATCHDIR || xdg-open $DBSCRATCHDIR || explorer.exe `wslpath -w "$DBSCRATCHDIR"`
+	open $DBSCRATCHDIR 2> /dev/null || xdg-open $DBSCRATCHDIR 2> /dev/null || explorer.exe `wslpath -w "$DBSCRATCHDIR"`
 fi
 # second one to keep other auxiliary and temporary files in
 SCRATCHDIR=$(mktemp -dt categoriserXXX) 
@@ -754,7 +885,7 @@ if [ "$SCRATCHDIR" == "" ] ; then
 	SCRATCHDIR=${TMPDIR-/tmp/}categoriserXXX.1$$
 fi
 if [ "$diagnostic" == true ]; then
-	open $SCRATCHDIR || xdg-open $SCRATCHDIR || explorer.exe `wslpath -w "$SCRATCHDIR"`
+	open $SCRATCHDIR 2> /dev/null || xdg-open $SCRATCHDIR 2> /dev/null || explorer.exe `wslpath -w "$SCRATCHDIR"`
 fi
 # create name of rated WA output file
 wa_in_filename_only="$(basename "$wa_in_filename")"
@@ -841,7 +972,7 @@ fi
 echo $db_total_cues > $SCRATCHDIR/db_total_cues
 echo $db_rows > $SCRATCHDIR/db_rows
 # check if format is consistent
-if [ "$(head -1 <<< "$db" | egrep -o "WA[[:digit:]]+\|[[:upper:]]*[[:lower:]]+\|*" | wc -l)" -ne "$db_total_cues" ]; then
+if [ "$(head -1 <<< "$db" | grep -E -o "WA[[:digit:]]+\|[[:upper:]]*[[:lower:]]+\|*" | wc -l)" -ne "$db_total_cues" ]; then
 	# let ID entering process finish first
 	wait
 	echo "WARNING: there appears to be an inconsistency in the first row of \"$db_filename\". It should contain sequences of \"WA000\" (where 000 is any number of digits), followed, in the next field, by a single word indicating the cue (either all lower case or mixed case). Optionally the first field of the first row can contain text that includes the words \"ID\", and the last field of the first row can contain text that includes either the words \"rater ID\". Please check \"$db_filename\" to make certain that it conforms to these specifications and then retry."
@@ -958,11 +1089,11 @@ for line in $in_wa; do
 				# if cue is in db, check if response in db
 				# and save category in variable
 				if [ "$approximate_match" ]; then
-					category=$(egrep "^$response.?\|" $DBSCRATCHDIR/$cue | cut -d '|' -f 2)
+					category=$(grep -E "^$response.?\|" $DBSCRATCHDIR/$cue | cut -d '|' -f 2)
 				elif [ "$plural_match" ]; then
-					category=$(egrep "^($response)S?\|" $DBSCRATCHDIR/$cue | cut -d '|' -f 2)
+					category=$(grep -E "^($response)S?\|" $DBSCRATCHDIR/$cue | cut -d '|' -f 2)
 				else
-					category=$(egrep "^$response\|" $DBSCRATCHDIR/$cue | cut -d '|' -f 2)
+					category=$(grep -E "^$response\|" $DBSCRATCHDIR/$cue | cut -d '|' -f 2)
 				fi
 				# if category is not empty, write line to output list
 				if [ -n "$category" ]; then
@@ -994,8 +1125,8 @@ for line in $in_wa; do
 					# if old_category is not empty,
 						# check it's not 'b'
 						if [ "$old_category" == "B" ]; then
-							echo "You have entered '$old_category', but the back option is not available."
-							read -p 'Please try again here >>> ' old_category  < /dev/tty
+							echo "You have entered '$old_category', but going further back is not an available option."
+							read -p 'Please enter a different value >>> ' old_category  < /dev/tty
 							old_category=$(tr '[[:lower:]]' '[[:upper:]]' <<< $old_category)
 							echo "You entered: $old_category"
 						fi
@@ -1029,7 +1160,7 @@ for line in $in_wa; do
 					# write out previous_pair
 					echo "$previous_pair$rater_id" >> $SCRATCHDIR/$categorised_out
 					# update db with previous pair's response and cat
-					if [ -z "$(egrep '\|$' <<< $previous_pair)" ]; then
+					if [ -z "$(grep -E '\|$' <<< $previous_pair)" ]; then
 					# if the category assigned is not empty
 						echo "$(cut -d '|' -f 2-3 <<< $previous_pair)$rater_id" >> $DBSCRATCHDIR/$previous_cue 2> /dev/null
 					fi
@@ -1063,7 +1194,8 @@ for line in $in_wa; do
 					# save db to pwd
 					echo -n > db.dat.tmp
 					for part in $(ls $DBSCRATCHDIR); do 
-						echo "$part      $(tr '\n' '     ' < $DBSCRATCHDIR/$part)" >> db.dat.tmp
+						#echo "$part      $(tr '\n' '     ' < $DBSCRATCHDIR/$part)" >> db.dat.tmp
+						echo "$part	$(tr '\n' '	' < $DBSCRATCHDIR/$part)" >> db.dat.tmp
 					done
 					read -p '           press ENTER to continue ' a  < /dev/tty
 				fi
@@ -1204,12 +1336,8 @@ export inter_rater=
 # define reporter function
 ###############################################################################
 reporter ( ) (
-#!/bin/bash -
 ###############################################################################
 # reporter.sh
-copyright="2015-2021 Cardiff Universtiy - Licensed under the EUPL v. 1.2 or later"
-####
-version="1.0"
 # DESCRRIPTION: creates reports for word-association data
 ################# defining functions ###############################
 # define csv_parser function
@@ -1235,6 +1363,13 @@ sed "s/$/$(printf '\r')/g" "$1"
 remove_windows_returns ( ) {
 sed "s/$(printf '\r')//g" "$1"
 }
+#######################
+# define remove_boms_macOS function
+#######################
+remove_boms_macOS ( ) {
+sed $'s/\xEF\xBB\xBF//' "$1"
+}
+ 
 #######################
 # define help function
 #######################
@@ -1362,7 +1497,8 @@ fi
 # check that input file exists and remove Windows returns
 if [ -s "$1" ]; then
 		remove_windows_returns "$1" > "$1.corr"
-		mv "$1.corr" "$1"
+		remove_boms_macOS "$1.corr" > "$1"
+		rm "$1.corr"
 else
 	echo "ERROR: could not open $file"
 	exit 1
@@ -1373,10 +1509,10 @@ case $# in
 	0)	echo "ERROR: no input files provided. Minimally, one input file needs to be provided to create a report. See the manual for details." >&2
 		exit 1
 		;;
-	1)	if [ "$(echo "$1" | egrep '\.csv')" ]; then
+	1)	if [ "$(echo "$1" | grep -E '\.csv')" ]; then
 			# testing format by checking whether there is a 'category' field in
 			# the header
-			if [ -z "$(head -1 "$1" | egrep ',\"*category\"*')" ]; then
+			if [ -z "$(head -1 "$1" | grep -E ',\"*category\"*')" ]; then
 				noncategorised=true
 				echo "noncategorised data detected in $file."
 				echo "producing primary response report..."
@@ -1618,7 +1754,7 @@ fi
 if [ -z "$noncategorised" ]; then
 	for field in $(sed $extended 's/\|/ /g' <<< "$in_header"); do
 		(( field_no += 1 ))
-		if [ "$(egrep '^category$' <<< "$field")" ]; then
+		if [ "$(grep -E '^category$' <<< "$field")" ]; then
 			cat_columns+=" $field_no"
 			if [ "$sw" ]; then
 				echo "ERROR: two consecutive category columns in $in_filename. Please verify and try again"
@@ -1632,11 +1768,11 @@ if [ -z "$noncategorised" ]; then
 	field_no=
 	field=
 	# verify identified columns are plausible
-	last_cat_column="$(egrep -o '[[:digit:]]+$' <<< "$cat_columns")"
+	last_cat_column="$(grep -E -o '[[:digit:]]+$' <<< "$cat_columns")"
 	if [ "$last_cat_column" -lt $(( $in_columns - 1 )) ]; then
 		# if last category column is not the last or penultimate column of the file	
 		echo "ERROR: the last or penultimate column of $in_filename_only should be a category column."
-		echo "However, the two final colums are: $(egrep -o '\|[^\|]+\|[^\|]+$' <<< "$in_header" | sed $extended -e 's/\|/ /g' -e 's/ /, /2')"
+		echo "However, the two final colums are: $(grep -E -o '\|[^\|]+\|[^\|]+$' <<< "$in_header" | sed $extended -e 's/\|/ /g' -e 's/ /, /2')"
 		echo "Please verify and try again."
 		exit 1
 	fi
@@ -2055,12 +2191,8 @@ list_only=
 # define administrator function
 #######################
 administrator ( ) (
-#!/bin/bash -
 ##############################################################################
 # administrator.sh
-copyright=" (c)2015-17 Cardiff University – Licensed under the EUPL v1.2 or later"
-####
-version="1.0"
 # DESCRRIPTION: performs administrative functions on wa dbs and data files
 ################# defining functions ###############################
 # define csv_parser function
@@ -2084,6 +2216,14 @@ sed "s/$/$(printf '\r')/g" "$1"
 remove_windows_returns ( ) {
 sed "s/$(printf '\r')//g" "$1"
 }
+
+#######################
+# define remove_boms_macOS function
+#######################
+remove_boms_macOS ( ) {
+sed $'s/\xEF\xBB\xBF//' "$1"
+}
+
 #######################
 # define help function
 #######################
@@ -2192,8 +2332,8 @@ new_diff="$(sed $extended -e 's/</-/' -e 's/>/-/' -e 's/		//g' -e 's/\|/ -> /' -
 echo "$new_diff"
 echo
 # following menu items are conditional so no empty side can be chosen
-if [ -z "$(egrep '>' <<< "$difference")" ]; then echo "	("$new_left")	choose left";fi
-if [ -z "$(egrep '<' <<< "$difference")" ]; then echo "	("$new_right")	choose right";fi
+if [ -z "$(grep -E '>' <<< "$difference")" ]; then echo "	("$new_left")	choose left";fi
+if [ -z "$(grep -E '<' <<< "$difference")" ]; then echo "	("$new_right")	choose right";fi
 echo "	(N)	input new category assignment"
 echo "	(D)	discard both ratings"
 if [ "$previous_rating" ] || [ "$deleted" ]; then echo "	(B)	go back to previous";fi
@@ -2222,8 +2362,8 @@ else
 	echo "$new_diff"
 	echo
 	# following menu items are conditional so no empty side can be chosen
-	if [ -z "$(egrep '>' <<< "$difference")" ]; then echo "	("$new_left")	choose left";fi
-	if [ -z "$(egrep '<' <<< "$difference")" ]; then echo "	("$new_right")	choose right";fi
+	if [ -z "$(grep -E '>' <<< "$difference")" ]; then echo "	("$new_left")	choose left";fi
+	if [ -z "$(grep -E '<' <<< "$difference")" ]; then echo "	("$new_right")	choose right";fi
 	echo "	(N)	input new category assignment"
 	echo "	(D)	discard both ratings"
 	echo "	(X)	exit rating process"
@@ -2238,8 +2378,8 @@ if [ "$r" == "*" ]; then
 	read -p '	enter new key for "choose right" here: ' new_right
 	echo "$new_left" > $SCRATCHDIR/new_left
 	echo "$new_right" > $SCRATCHDIR/new_right
-	if [ -z "$(egrep '>' <<< "$difference")" ]; then echo "	($new_left)	choose left";fi
-	if [ -z "$(egrep '<' <<< "$difference")" ]; then echo "	($new_right)	choose right";fi
+	if [ -z "$(grep -E '>' <<< "$difference")" ]; then echo "	($new_left)	choose left";fi
+	if [ -z "$(grep -E '<' <<< "$difference")" ]; then echo "	($new_right)	choose right";fi
 	echo "	(N)	input new category assignment"
 	echo "	(D)	discard both ratings"
 	read -p '	' r
@@ -2308,8 +2448,8 @@ previous_resolution_menu () {
 	echo "	previously rated as: $(cut -d '|' -f 2 <<< $previous_rating | cut -d ';' -f 1)"
 	echo
 	# following menu items are conditional so no empty side can be chosen
-	if [ -z "$(egrep '>' <<< "$new_difference")" ]; then echo "	("$new_left")	choose left";fi
-	if [ -z "$(egrep '<' <<< "$new_difference")" ]; then echo "	("$new_right")	choose right";fi
+	if [ -z "$(grep -E '>' <<< "$new_difference")" ]; then echo "	("$new_left")	choose left";fi
+	if [ -z "$(grep -E '<' <<< "$new_difference")" ]; then echo "	("$new_right")	choose right";fi
 	echo "	(N)	input new category assignment"
 	echo "	(D)	discard both ratings"
 	echo
@@ -2419,12 +2559,13 @@ case $# in
 	1)	if [ -s "$1" ]; then
 			t_task=true
 			remove_windows_returns "$1" > "$1.corr"
-			mv "$1.corr" "$1"
+			remove_boms_macOS "$1.corr" > "$1"
+			rm "$1.corr"
 		else
 			echo "ERROR: could not access file $1" >&2
 			exit 1
 		fi
-		if [ "$(egrep -o '\.csv' <<<"$1")" ]; then
+		if [ "$(grep -E -o '\.csv' <<<"$1")" ]; then
 			csv_infile="$1"
 			csv_infile_name="$(basename "$csv_infile")"
 		else
@@ -2434,14 +2575,16 @@ case $# in
 		;;
 	2)	if [ -s "$1" ] && [ -s "$2" ]; then
 			remove_windows_returns "$1" > "$1.corr"
-			mv "$1.corr" "$1"
+			remove_boms_macOS "$1.corr" > "$1"
+			rm "$1.corr"
 			remove_windows_returns "$2" > "$2.corr"
-			mv "$2.corr" "$2"
+			remove_boms_macOS "$2.corr" > "$2"
+			rm "$2.corr"
 		else
 			echo "ERROR: could not access file(s) $1 and/or $2" >&2
 			exit 1
 		fi
-		if [ "$(egrep -o '\.dat' <<<"$1")" ] && [ "$(egrep -o '\.dat'<<<"$2")" ]; then
+		if [ "$(grep -E -o '\.dat' <<<"$1")" ] && [ "$(grep -E -o '\.dat'<<<"$2")" ]; then
 			dat_infile1="$1"
 			dat_infile1_name="$(basename "$dat_infile1")"
 			dat_infile2="$2"
@@ -2627,8 +2770,8 @@ if [ "$dat_infile1_name" ]; then
 			# copy over responses only found in dat_infile1
 			for single_resp in $(comm -23 $SCRATCHDIR/resp[12]); do
 				# copy it over and remove it
-				egrep "^$single_resp\|" $SCRATCHDIR1/$cue >> $R_SCRATCHDIR/$cue
-				egrep -v "^$single_resp\|" $SCRATCHDIR1/$cue >$SCRATCHDIR1/$cue.
+				grep -E "^$single_resp\|" $SCRATCHDIR1/$cue >> $R_SCRATCHDIR/$cue
+				grep -E -v "^$single_resp\|" $SCRATCHDIR1/$cue >$SCRATCHDIR1/$cue.
 				mv $SCRATCHDIR1/$cue. $SCRATCHDIR1/$cue
 				if [ -z "$p_task" ] && [ "$r_task" ]; then echo "Ratings for response \"$single_resp\" will be copied to resolved list."
 				fi
@@ -2636,8 +2779,8 @@ if [ "$dat_infile1_name" ]; then
 			# move over responses only found in dat_infile2
 			for single_resp in $(comm -13 $SCRATCHDIR/resp[12]); do
 				# copy it over and remove it
-				egrep "^$single_resp\|" $SCRATCHDIR2/$cue >> $R_SCRATCHDIR/$cue
-				egrep -v "^$single_resp\|" $SCRATCHDIR2/$cue >$SCRATCHDIR2/$cue.
+				grep -E "^$single_resp\|" $SCRATCHDIR2/$cue >> $R_SCRATCHDIR/$cue
+				grep -E -v "^$single_resp\|" $SCRATCHDIR2/$cue >$SCRATCHDIR2/$cue.
 				mv $SCRATCHDIR2/$cue. $SCRATCHDIR2/$cue
 				if [ -z "$p_task" ] && [ "$r_task" ]; then echo "Ratings for response \"$single_resp\" will be copied to resolved list."
 				fi
@@ -2773,7 +2916,11 @@ if [ "$dat_infile1_name" ]; then
 	fi
 	#### write new db file (this is tab delimited with one cue per line)
 	if [ -z "$p_task" ] && [ "$r_task" ]; then
-		add_to_name resolved-db-$(date "+%d-%m-%Y%n").dat
+		if [ $DARWIN ]; then
+			add_to_name resolved-db-$(date "+%d-%m-%Y_%H.%M.%S").dat
+		else
+			add_to_name resolved-db-$(date "+%d-%m-%Y_%H:%M:%S").dat
+		fi
 		for part in $(ls $R_SCRATCHDIR); do 
 			echo "$part	$(tr '\n' '	' < $R_SCRATCHDIR/$part)" | sed '/^$/d'>> $SCRATCHDIR/$output_filename
 			sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' $SCRATCHDIR/$output_filename > $output_filename
@@ -2803,7 +2950,11 @@ if [ "$dat_infile1_name" ]; then
 			do_not_ask=true
 		fi
 	else # i.e. if c_task
-		add_to_name combined-db-$(date "+%d-%m-%Y%n").dat
+		if [ $DARWIN ]; then
+			add_to_name combined-db-$(date "+%d-%m-%Y_%H.%M.%S").dat
+		else
+			add_to_name combined-db-$(date "+%d-%m-%Y_%H:%M:%S").dat
+		fi
 		for part in $(ls $R_SCRATCHDIR); do 
 			echo "$part	$(tr '\n' '	' < $R_SCRATCHDIR/$part)" >> "$SCRATCHDIR/$output_filename"
 			sed -e 's/QQUUEESSTTIIOONNMMAARRKK/?/g' -e 's/CCIIRRCCUUMMFFLLEEXX/^/g' -e 's/HHAASSHHTTAAGG/#/g' -e 's/EEXXCCLLAAMM/!/g' $SCRATCHDIR/$output_filename > $output_filename
@@ -2877,7 +3028,7 @@ elif [ "$csv_infile_name" ]; then
 	echo $db_total_cues > $SCRATCHDIR/db_total_cues
 	echo $db_rows > $SCRATCHDIR/db_rows
 	# check if format is consistent
-	if [ "$(head -1 <<< "$db" | egrep -o "[[:upper:]]*[[:lower:]]+\|category" | wc -l)" -ne "$db_total_cues" ]; then
+	if [ "$(head -1 <<< "$db" | grep -E -o "[[:upper:]]*[[:lower:]]+\|category" | wc -l)" -ne "$db_total_cues" ]; then
 		echo "WARNING: there appears to be an inconsistency in the first row of \"$csv_infile_name\". It should contain sequences of a cue, followed, in the next field, by \"category\". Optionally the first field of the first row can contain text that includes the words \"ID\", and the words \"rated by\" can be included in a separate field after each category field. Please check to make certain that the format conforms to these specifications and then retry."
 		rm -r $SCRATCHDIR $R_SCRATCHDIR &
 		exit 1
@@ -2926,7 +3077,11 @@ elif [ "$csv_infile_name" ]; then
 		fi
 	done
 	# now write the db to file
-	add_to_name converted-db-$(date "+%d-%m-%Y%n").dat
+	if [ $DARWIN ]; then
+		add_to_name converted-db-$(date "+%d-%m-%Y_%H.%M.%S").dat
+	else
+		add_to_name converted-db-$(date "+%d-%m-%Y_%H:%M:%S").dat
+	fi
 	for part in $(ls $R_SCRATCHDIR); do 
 		echo "$part	$(tr '\n' '	' < $R_SCRATCHDIR/$part)" >> $SCRATCHDIR/newdb.csv
 	done
@@ -3035,3 +3190,4 @@ done
 #fi
 echo "This window can now be closed."
 exit 0
+
